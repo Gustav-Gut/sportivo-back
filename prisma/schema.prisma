@@ -1,0 +1,75 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      Role     @default(ADMIN)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Student {
+  id        String   @id @default(uuid())
+  firstName String
+  lastName  String
+  email     String   @unique
+  phone     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  payments     Payment[]
+  subscription Subscription?
+}
+
+model Subscription {
+  id        String             @id @default(uuid())
+  planId    String
+  status    SubscriptionStatus @default(ACTIVE)
+  startDate DateTime           @default(now())
+  endDate   DateTime?
+  studentId String             @unique
+  student   Student            @relation(fields: [studentId], references: [id])
+}
+
+model Payment {
+  id         String        @id @default(uuid())
+  amount     Float
+  currency   String        @default("CLP")
+  provider   String // ej: "mercadopago"
+  providerId String? // ID de la transacción en MP
+  status     PaymentStatus @default(PENDING)
+  studentId  String
+  student    Student       @relation(fields: [studentId], references: [id])
+  createdAt  DateTime      @default(now())
+}
+
+enum Role {
+  ADMIN
+  COACH
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
