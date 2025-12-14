@@ -1,17 +1,77 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { PaymentGateway } from './interfaces/payment-gateway.interface';
+
+import { PrismaService } from '../prisma/prisma.service';
+import { Student } from '@prisma/client';
 
 @Injectable()
 export class PaymentsService {
     constructor(
         @Inject('PAYMENT_GATEWAY') private readonly paymentGateway: PaymentGateway,
+        private prismaService: PrismaService,
     ) { }
 
+    private async validateStudent(email: string): Promise<Student> {
+        const student = await this.prismaService.student.findUnique({
+            where: { email },
+        });
+        if (!student) {
+            throw new NotFoundException(`Student with email ${email} not found`);
+        }
+        return student;
+    }
+
     async createPayment(amount: number, email: string, description: string) {
-        return this.paymentGateway.createPaymentLink(amount, email, description);
+        const student = await this.validateStudent(email);
+
+        const newPayment = await this.prismaService.payment.create({
+            data: {
+                amount: amount,
+                provider: 'mercadopago',
+                status: 'PENDING',
+                studentId: student.id,
+            },
+        });
+
+        const link = await this.paymentGateway.createPaymentLink(
+            amount,
+            email,
+            description,
+            newPayment.id,
+        );
+
+        return { link, paymentId: newPayment.id };
     }
 
     async createSubscription(price: number, email: string, reason: string, frequency: number) {
-        return this.paymentGateway.createSubscription(price, email, reason, frequency);
+        const student = await this.validateStudent(email);
+
+        const subscription = await this.prismaService.subscription.upsert({
+            where: { studentId: student.id },
+            update: {
+                planId: reason,
+                status: 'PENDING',
+                startDate: new Date(),
+            },
+            create: {
+                studentId: student.id,
+                planId: reason,
+                status: 'PENDING',
+            },
+        });
+
+        const link = await this.paymentGateway.createSubscription(
+            price,
+            email,
+            reason,
+            frequency,
+            subscription.id,
+        );
+
+        return { link, subscriptionId: subscription.id };
+    }
+
+    async getSubscriptions(email?: string) {
+        return this.paymentGateway.searchSubscriptions(email);
     }
 }

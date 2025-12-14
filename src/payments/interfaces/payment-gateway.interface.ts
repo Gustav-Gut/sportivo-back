@@ -8,7 +8,8 @@ export interface PaymentGateway {
     createPaymentLink(
         amount: number,
         email: string,
-        description: string
+        description: string,
+        externalId: string,
     ): Promise<string>;
 
     /**
@@ -23,7 +24,14 @@ export interface PaymentGateway {
         email: string,
         reason: string,
         frequency: number, // en meses
+        externalId: string,
     ): Promise<string>;
+
+    /**
+     * Busca suscripciones de un usuario
+     * @param email Email del usuario
+     */
+    searchSubscriptions(email?: string): Promise<any[]>;
 
     /**
      * Verifica el estado de una transacción

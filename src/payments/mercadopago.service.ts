@@ -20,12 +20,18 @@ export class MercadoPagoService implements PaymentGateway {
         });
     }
 
-    async createPaymentLink(amount: number, email: string, description: string): Promise<string> {
+    async createPaymentLink(
+        amount: number,
+        email: string,
+        description: string,
+        externalId: string
+    ): Promise<string> {
         const preference = new Preference(this.client);
 
         try {
             const response = await preference.create({
                 body: {
+                    external_reference: externalId,
                     items: [
                         {
                             id: 'sportivo-service',
@@ -53,11 +59,18 @@ export class MercadoPagoService implements PaymentGateway {
         }
     }
 
-    async createSubscription(price: number, email: string, reason: string, frequency: number): Promise<string> {
+    async createSubscription(
+        price: number,
+        email: string,
+        reason: string,
+        frequency: number,
+        externalId: string,
+    ): Promise<string> {
         const preApproval = new PreApproval(this.client);
         try {
             const response = await preApproval.create({
                 body: {
+                    external_reference: externalId,
                     reason: reason,
                     payer_email: email,
                     auto_recurring: {
@@ -74,6 +87,23 @@ export class MercadoPagoService implements PaymentGateway {
         } catch (error) {
             console.error('Error creando suscripción MP:', error);
             throw new InternalServerErrorException('Could not create subscription link');
+        }
+    }
+
+    async searchSubscriptions(email?: string): Promise<any[]> {
+        const preApproval = new PreApproval(this.client);
+
+        try {
+            const filters: any = {};
+            if (email) {
+                filters.payer_email = email;
+            }
+            // También podríamos filtrar por status: 'authorized' 
+            const response = await preApproval.search({ options: filters });
+            return response.results || [];
+        } catch (error) {
+            console.error('Error buscando suscripciones:', error);
+            throw new InternalServerErrorException('Error searching subscriptions');
         }
     }
 

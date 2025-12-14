@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Get, Query } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
@@ -24,5 +24,10 @@ export class PaymentsController {
             createSubscriptionDto.reason,
             createSubscriptionDto.frequency,
         );
+    }
+
+    @Get('subscriptions')
+    getSubscriptions(@Query('email') email?: string) {
+        return this.paymentsService.getSubscriptions(email);
     }
 }
