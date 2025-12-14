@@ -1,6 +1,7 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
+import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 
 @Controller('payments')
 export class PaymentsController {
@@ -12,6 +13,16 @@ export class PaymentsController {
             createPaymentDto.amount,
             createPaymentDto.email,
             createPaymentDto.description,
+        );
+    }
+
+    @Post('create-subscription')
+    createSubscription(@Body() createSubscriptionDto: CreateSubscriptionDto) {
+        return this.paymentsService.createSubscription(
+            createSubscriptionDto.price,
+            createSubscriptionDto.email,
+            createSubscriptionDto.reason,
+            createSubscriptionDto.frequency,
         );
     }
 }

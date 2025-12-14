@@ -10,4 +10,8 @@ export class PaymentsService {
     async createPayment(amount: number, email: string, description: string) {
         return this.paymentGateway.createPaymentLink(amount, email, description);
     }
+
+    async createSubscription(price: number, email: string, reason: string, frequency: number) {
+        return this.paymentGateway.createSubscription(price, email, reason, frequency);
+    }
 }

@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import MercadoPagoConfig, { Preference, Payment } from 'mercadopago';
+import MercadoPagoConfig, { Preference, Payment, PreApproval } from 'mercadopago';
 import { PaymentGateway } from './interfaces/payment-gateway.interface';
 
 @Injectable()
@@ -50,6 +50,30 @@ export class MercadoPagoService implements PaymentGateway {
         } catch (error) {
             console.error('Error creando preferencia MP:', error);
             throw new InternalServerErrorException('Could not create payment link');
+        }
+    }
+
+    async createSubscription(price: number, email: string, reason: string, frequency: number): Promise<string> {
+        const preApproval = new PreApproval(this.client);
+        try {
+            const response = await preApproval.create({
+                body: {
+                    reason: reason,
+                    payer_email: email,
+                    auto_recurring: {
+                        frequency: frequency,
+                        frequency_type: 'months',
+                        transaction_amount: price,
+                        currency_id: 'CLP',
+                    },
+                    back_url: 'https://www.google.com/success',
+                    status: 'pending',
+                },
+            });
+            return response.init_point!; // init_point es el link de pago
+        } catch (error) {
+            console.error('Error creando suscripción MP:', error);
+            throw new InternalServerErrorException('Could not create subscription link');
         }
     }
 
