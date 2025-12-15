@@ -1,7 +1,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import MercadoPagoConfig, { Preference, Payment, PreApproval } from 'mercadopago';
-import { PaymentGateway } from './interfaces/payment-gateway.interface';
+import { PaymentGateway, PaymentDetails } from './interfaces/payment-gateway.interface';
 
 @Injectable()
 export class MercadoPagoService implements PaymentGateway {
@@ -107,13 +107,30 @@ export class MercadoPagoService implements PaymentGateway {
         }
     }
 
-    async getPaymentStatus(id: string): Promise<string> {
+    async getPaymentStatus(id: string): Promise<PaymentDetails> {
         try {
             const payment = new Payment(this.client);
             const response = await payment.get({ id });
-            return response.status!;
+
+            return {
+                status: response.status!,
+                externalId: response.external_reference!,
+            };
         } catch (error) {
             throw new InternalServerErrorException('Error fetching payment status');
+        }
+    }
+
+    async getSubscriptionStatus(id: string): Promise<PaymentDetails> {
+        try {
+            const preApproval = new PreApproval(this.client);
+            const response = await preApproval.get({ id });
+            return {
+                status: response.status!, // 'authorized' o 'cancelled'
+                externalId: response.external_reference!,
+            };
+        } catch (error) {
+            throw new InternalServerErrorException('Error fetching subscription status');
         }
     }
 }

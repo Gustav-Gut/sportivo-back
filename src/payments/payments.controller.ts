@@ -30,4 +30,12 @@ export class PaymentsController {
     getSubscriptions(@Query('email') email?: string) {
         return this.paymentsService.getSubscriptions(email);
     }
+
+    @Post('webhook')
+    async handleWebhook(@Body() body: any) {
+        // Respondemos 200 OK rápido a MercadoPago para que sepa que recibimos el mensaje
+        // El procesamiento lo hacemos asíncrono (sin await) o síncrono si es rápido.
+        await this.paymentsService.handleWebhook(body);
+        return { status: 'OK' };
+    }
 }

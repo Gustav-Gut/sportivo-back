@@ -1,3 +1,8 @@
+export interface PaymentDetails {
+    status: string;
+    externalId: string; // Nuestro UUID
+}
+
 export interface PaymentGateway {
     /**
      * Genera una preferencia de pago (link de pago)
@@ -37,5 +42,11 @@ export interface PaymentGateway {
      * Verifica el estado de una transacción
      * @param id ID de la transacción del proveedor
      */
-    getPaymentStatus(id: string): Promise<string>;
+    getPaymentStatus(id: string): Promise<PaymentDetails>;
+
+    /**
+     * Verifica el estado de una suscripción
+     * @param id ID de la suscripción del proveedor
+     */
+    getSubscriptionStatus(id: string): Promise<PaymentDetails>;
 }

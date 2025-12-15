@@ -35,21 +35,22 @@ model Student {
 }
 
 model Subscription {
-  id        String             @id @default(uuid())
-  planId    String
-  status    SubscriptionStatus @default(ACTIVE)
-  startDate DateTime           @default(now())
-  endDate   DateTime?
-  studentId String             @unique
-  student   Student            @relation(fields: [studentId], references: [id])
+  id         String             @id @default(uuid())
+  planId     String
+  providerId String?
+  status     SubscriptionStatus @default(PENDING)
+  startDate  DateTime           @default(now())
+  endDate    DateTime?
+  studentId  String             @unique
+  student    Student            @relation(fields: [studentId], references: [id])
 }
 
 model Payment {
   id         String        @id @default(uuid())
   amount     Float
   currency   String        @default("CLP")
-  provider   String // ej: "mercadopago"
-  providerId String? // ID de la transacción en MP
+  provider   String
+  providerId String?
   status     PaymentStatus @default(PENDING)
   studentId  String
   student    Student       @relation(fields: [studentId], references: [id])

@@ -74,4 +74,41 @@ export class PaymentsService {
     async getSubscriptions(email?: string) {
         return this.paymentGateway.searchSubscriptions(email);
     }
+
+    async handleWebhook(body: any) {
+        // MercadoPago envía diferentes tipos de eventos. Nos interesa 'payment' o 'subscription_preapproval'
+        const type = body.type || body.topic;
+        const dataId = body.data?.id || body.data?.ID;
+        if (!dataId) return;
+        console.log(`Webhook received: Type=${type}, ID=${dataId}`);
+        try {
+            if (type === 'payment') {
+                const paymentInfo = await this.paymentGateway.getPaymentStatus(dataId);
+
+                if (paymentInfo.externalId) {
+                    await this.prismaService.payment.update({
+                        where: { id: paymentInfo.externalId },
+                        data: {
+                            status: paymentInfo.status === 'approved' ? 'COMPLETED' : 'FAILED',
+                            providerId: dataId.toString(),
+                        },
+                    });
+                }
+            }
+            else if (type === 'subscription_preapproval') {
+                const subscriptionInfo = await this.paymentGateway.getSubscriptionStatus(dataId);
+                if (subscriptionInfo.externalId) {
+                    await this.prismaService.subscription.update({
+                        where: { id: subscriptionInfo.externalId },
+                        data: {
+                            status: subscriptionInfo.status === 'authorized' ? 'ACTIVE' : 'CANCELLED',
+                            providerId: dataId.toString(),
+                        },
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error processing webhook:', error);
+        }
+    }
 }
