@@ -34,6 +34,17 @@ model Student {
   subscription Subscription?
 }
 
+model Plan {
+  id             String         @id @default(uuid())
+  name           String
+  description    String
+  price          Float
+  durationMonths Int            @default(1)
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  subscriptions  Subscription[]
+}
+
 model Subscription {
   id         String             @id @default(uuid())
   planId     String
@@ -43,6 +54,7 @@ model Subscription {
   endDate    DateTime?
   studentId  String             @unique
   student    Student            @relation(fields: [studentId], references: [id])
+  plan       Plan               @relation(fields: [planId], references: [id])
 }
 
 model Payment {
