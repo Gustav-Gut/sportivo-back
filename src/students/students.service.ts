@@ -7,35 +7,51 @@ import { PrismaService } from '../prisma/prisma.service';
 export class StudentsService {
   constructor(private prisma: PrismaService) { }
 
-  async create(dto: CreateStudentDto) {
+  async create(dto: CreateStudentDto, schoolId: string) {
     return this.prisma.student.create({
-      data: dto,
+      data: {
+        ...dto,
+        schoolId,
+      },
     });
   }
 
-  async findAll() {
+  async findAll(schoolId: string) {
     return this.prisma.student.findMany({
-      where: { active: true },
+      where: {
+        active: true,
+        schoolId,
+      },
     });
   }
 
-  async findOne(id: string) {
-    return this.prisma.student.findUnique({
-      where: { id },
+  async findOne(id: string, schoolId: string) {
+    return this.prisma.student.findFirst({
+      where: {
+        id,
+        schoolId,
+        active: true,
+      },
     });
   }
 
-  async update(id: string, dto: UpdateStudentDto) {
+  async update(id: string, dto: UpdateStudentDto, schoolId: string) {
     return this.prisma.student.update({
-      where: { id },
+      where: {
+        id,
+        schoolId,
+      },
       data: dto,
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, schoolId: string) {
     // Soft delete para no perder historial de pagos
     return this.prisma.student.update({
-      where: { id },
+      where: {
+        id,
+        schoolId,
+      },
       data: { active: false },
     });
   }

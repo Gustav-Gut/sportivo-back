@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Headers, UnauthorizedException } from '@nestjs/common';
 import { StudentsService } from './students.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
@@ -8,27 +8,42 @@ export class StudentsController {
   constructor(private readonly studentsService: StudentsService) { }
 
   @Post()
-  create(@Body() createStudentDto: CreateStudentDto) {
-    return this.studentsService.create(createStudentDto);
+  create(
+    @Body() createStudentDto: CreateStudentDto,
+    @Headers('x-school-id') schoolId: string) {
+    if (!schoolId) throw new UnauthorizedException('School ID is required header: x-school-id');
+    return this.studentsService.create(createStudentDto, schoolId);
   }
 
   @Get()
-  findAll() {
-    return this.studentsService.findAll();
+  findAll(
+    @Headers('x-school-id') schoolId: string) {
+    if (!schoolId) throw new UnauthorizedException('School ID is required header: x-school-id');
+    return this.studentsService.findAll(schoolId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.studentsService.findOne(id);
+  findOne(
+    @Param('id') id: string,
+    @Headers('x-school-id') schoolId: string) {
+    if (!schoolId) throw new UnauthorizedException('School ID is required header: x-school-id');
+    return this.studentsService.findOne(id, schoolId);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateStudentDto: UpdateStudentDto) {
-    return this.studentsService.update(id, updateStudentDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateStudentDto: UpdateStudentDto,
+    @Headers('x-school-id') schoolId: string) {
+    if (!schoolId) throw new UnauthorizedException('School ID is required header: x-school-id');
+    return this.studentsService.update(id, updateStudentDto, schoolId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.studentsService.remove(id);
+  remove(
+    @Param('id') id: string,
+    @Headers('x-school-id') schoolId: string) {
+    if (!schoolId) throw new UnauthorizedException('School ID is required header: x-school-id');
+    return this.studentsService.remove(id, schoolId);
   }
 }

@@ -9,6 +9,10 @@ export class CreateStudentDto {
     @IsNotEmpty()
     lastName: string;
 
+    @IsString()
+    @IsNotEmpty()
+    rut: string;
+
     @IsEmail()
     @IsNotEmpty()
     email: string;
