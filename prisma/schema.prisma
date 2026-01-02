@@ -12,26 +12,55 @@ datasource db {
   provider = "postgresql"
 }
 
+model School {
+  id            String         @id @default(uuid())
+  name          String
+  slug          String         @unique
+  address       String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  users         User[]
+  students      Student[]
+  plans         Plan[]
+  subscriptions Subscription[]
+  payments      Payment[]
+}
+
 model User {
   id        String   @id @default(uuid())
-  email     String   @unique
+  rut       String
+  firstName String
+  lastName  String
+  email     String
+  phone     String?
   password  String
-  role      Role     @default(ADMIN)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  schoolId  String
+  role      Role     @default(ADMIN)
+  school    School   @relation(fields: [schoolId], references: [id])
+
+  @@unique([rut, schoolId])
+  @@unique([email, schoolId])
 }
 
 model Student {
   id           String        @id @default(uuid())
+  rut          String
   firstName    String
   lastName     String
-  email        String        @unique
+  email        String
   phone        String?
   active       Boolean       @default(true)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+  schoolId     String
   payments     Payment[]
   subscription Subscription?
+  school       School        @relation(fields: [schoolId], references: [id])
+
+  @@unique([rut, schoolId])
+  @@unique([email, schoolId])
 }
 
 model Plan {
@@ -40,33 +69,42 @@ model Plan {
   description    String
   price          Float
   durationMonths Int            @default(1)
-  isActive       Boolean        @default(true)
+  active         Boolean        @default(true)
   createdAt      DateTime       @default(now())
+  schoolId       String
   subscriptions  Subscription[]
+  school         School         @relation(fields: [schoolId], references: [id])
+
+  @@unique([name, schoolId])
 }
 
 model Subscription {
   id         String             @id @default(uuid())
   planId     String
-  providerId String?
-  status     SubscriptionStatus @default(PENDING)
+  provider   PaymentProvider
+  externalId String?
   startDate  DateTime           @default(now())
   endDate    DateTime?
   studentId  String             @unique
+  schoolId   String
+  status     SubscriptionStatus @default(PENDING)
+  school     School             @relation(fields: [schoolId], references: [id])
   student    Student            @relation(fields: [studentId], references: [id])
   plan       Plan               @relation(fields: [planId], references: [id])
 }
 
 model Payment {
-  id         String        @id @default(uuid())
+  id         String          @id @default(uuid())
   amount     Float
-  currency   String        @default("CLP")
-  provider   String
-  providerId String?
-  status     PaymentStatus @default(PENDING)
+  currency   String          @default("CLP")
+  provider   PaymentProvider
+  externalId String?
+  status     PaymentStatus   @default(PENDING)
+  createdAt  DateTime        @default(now())
   studentId  String
-  student    Student       @relation(fields: [studentId], references: [id])
-  createdAt  DateTime      @default(now())
+  schoolId   String
+  school     School          @relation(fields: [schoolId], references: [id])
+  student    Student         @relation(fields: [studentId], references: [id])
 }
 
 enum Role {
@@ -85,4 +123,11 @@ enum PaymentStatus {
   PENDING
   COMPLETED
   FAILED
+}
+
+enum PaymentProvider {
+  MERCADOPAGO
+  TOKU
+  PAYPAL
+  STRIPE
 }
