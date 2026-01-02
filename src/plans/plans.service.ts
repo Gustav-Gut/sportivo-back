@@ -7,35 +7,61 @@ import { PrismaService } from '../prisma/prisma.service';
 export class PlansService {
   constructor(private prisma: PrismaService) { }
 
-  create(createPlanDto: CreatePlanDto) {
+  create(schoolId: string, createPlanDto: CreatePlanDto) {
     return this.prisma.plan.create({
-      data: createPlanDto,
+      data: {
+        ...createPlanDto,
+        school: {
+          connect: {
+            id: schoolId,
+          },
+        },
+      },
     });
   }
 
-  findAll() {
+  findAll(schoolId: string) {
     return this.prisma.plan.findMany({
-      where: { isActive: true },
+      where: {
+        active: true,
+        schoolId
+      },
     });
   }
 
-  findOne(id: string) {
-    return this.prisma.plan.findUnique({
-      where: { id },
+  findOne(id: string, schoolId: string) {
+    return this.prisma.plan.findFirst({
+      where: {
+        id,
+        schoolId,
+        active: true
+      },
     });
   }
 
-  update(id: string, updatePlanDto: UpdatePlanDto) {
+  async update(id: string, schoolId: string, updatePlanDto: UpdatePlanDto) {
+    const plan = await this.prisma.plan.findFirst({
+      where: { id, schoolId, active: true }
+    });
+
+    if (!plan) throw new Error("Plan not found");
+
     return this.prisma.plan.update({
       where: { id },
       data: updatePlanDto,
     });
   }
 
-  remove(id: string) {
+  async remove(id: string, schoolId: string) {
+    const plan = await this.prisma.plan.findFirst({
+      where: { id, schoolId, active: true }
+    });
+
+    if (!plan) throw new Error("Plan not found");
+
     return this.prisma.plan.update({
       where: { id },
-      data: { isActive: false },
+      data: { active: false },
     });
   }
 }
