@@ -1,3 +1,5 @@
+import { PaymentProvider } from "@prisma/client";
+
 export interface PaymentDetails {
     status: string;
     externalId: string; // Nuestro UUID
@@ -49,4 +51,7 @@ export interface PaymentGateway {
      * @param id ID de la suscripción del proveedor
      */
     getSubscriptionStatus(id: string): Promise<PaymentDetails>;
+
+    // Identificador del proveedor (MERCADOPAGO, STRIPE, etc.)
+    provider: PaymentProvider;
 }

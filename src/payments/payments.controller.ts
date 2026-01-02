@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Get, Query } from '@nestjs/common';
+import { Body, Controller, Post, Get, Query, Headers, UnauthorizedException } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
@@ -8,21 +8,31 @@ export class PaymentsController {
     constructor(private readonly paymentsService: PaymentsService) { }
 
     @Post('create-link')
-    createLink(@Body() createPaymentDto: CreatePaymentDto) {
+    createLink(
+        @Body() createPaymentDto: CreatePaymentDto,
+        @Headers('x-school-id') schoolId: string
+    ) {
+        if (!schoolId) throw new UnauthorizedException('School ID is required');
         return this.paymentsService.createPayment(
             createPaymentDto.amount,
             createPaymentDto.email,
             createPaymentDto.description,
+            schoolId
         );
     }
 
     @Post('create-subscription')
-    createSubscription(@Body() createSubscriptionDto: CreateSubscriptionDto) {
+    createSubscription(
+        @Body() createSubscriptionDto: CreateSubscriptionDto,
+        @Headers('x-school-id') schoolId: string
+    ) {
+        if (!schoolId) throw new UnauthorizedException('School ID is required');
         return this.paymentsService.createSubscription(
             createSubscriptionDto.price,
             createSubscriptionDto.email,
             createSubscriptionDto.reason,
             createSubscriptionDto.frequency,
+            schoolId,
         );
     }
 

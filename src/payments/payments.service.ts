@@ -11,9 +11,13 @@ export class PaymentsService {
         private prismaService: PrismaService,
     ) { }
 
-    private async validateStudent(email: string): Promise<Student> {
-        const student = await this.prismaService.student.findUnique({
-            where: { email },
+    private async validateStudent(email: string, schoolId: string): Promise<Student> {
+        const student = await this.prismaService.student.findFirst({
+            where: {
+                email,
+                schoolId,
+                active: true
+            },
         });
         if (!student) {
             throw new NotFoundException(`Student with email ${email} not found`);
@@ -21,15 +25,16 @@ export class PaymentsService {
         return student;
     }
 
-    async createPayment(amount: number, email: string, description: string) {
-        const student = await this.validateStudent(email);
+    async createPayment(amount: number, email: string, description: string, schoolId: string) {
+        const student = await this.validateStudent(email, schoolId);
 
         const newPayment = await this.prismaService.payment.create({
             data: {
                 amount: amount,
-                provider: 'mercadopago',
+                provider: this.paymentGateway.provider,
                 status: 'PENDING',
                 studentId: student.id,
+                schoolId: schoolId
             },
         });
 
@@ -43,8 +48,8 @@ export class PaymentsService {
         return { link, paymentId: newPayment.id };
     }
 
-    async createSubscription(price: number, email: string, reason: string, frequency: number) {
-        const student = await this.validateStudent(email);
+    async createSubscription(price: number, email: string, reason: string, frequency: number, schoolId: string) {
+        const student = await this.validateStudent(email, schoolId);
 
         const subscription = await this.prismaService.subscription.upsert({
             where: { studentId: student.id },
@@ -56,7 +61,9 @@ export class PaymentsService {
             create: {
                 studentId: student.id,
                 planId: reason,
+                provider: this.paymentGateway.provider,
                 status: 'PENDING',
+                schoolId: schoolId
             },
         });
 
@@ -90,7 +97,7 @@ export class PaymentsService {
                         where: { id: paymentInfo.externalId },
                         data: {
                             status: paymentInfo.status === 'approved' ? 'COMPLETED' : 'FAILED',
-                            providerId: dataId.toString(),
+                            externalId: dataId.toString(),
                         },
                     });
                 }
@@ -102,7 +109,7 @@ export class PaymentsService {
                         where: { id: subscriptionInfo.externalId },
                         data: {
                             status: subscriptionInfo.status === 'authorized' ? 'ACTIVE' : 'CANCELLED',
-                            providerId: dataId.toString(),
+                            externalId: dataId.toString(),
                         },
                     });
                 }
