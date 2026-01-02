@@ -2,10 +2,13 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import MercadoPagoConfig, { Preference, Payment, PreApproval } from 'mercadopago';
 import { PaymentGateway, PaymentDetails } from './interfaces/payment-gateway.interface';
+import { PaymentProvider } from '@prisma/client';
 
 @Injectable()
 export class MercadoPagoService implements PaymentGateway {
     private client: MercadoPagoConfig;
+
+    readonly provider = PaymentProvider.MERCADOPAGO;
 
     constructor(private configService: ConfigService) {
         const accessToken = this.configService.get<string>('MERCADOPAGO_ACCESS_TOKEN');
