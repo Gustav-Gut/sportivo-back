@@ -19,6 +19,7 @@ model School {
   address       String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  active        Boolean        @default(true)
   users         User[]
   students      Student[]
   plans         Plan[]
