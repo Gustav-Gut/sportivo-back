@@ -38,7 +38,7 @@ export interface PaymentGateway {
      * Busca suscripciones de un usuario
      * @param email Email del usuario
      */
-    searchSubscriptions(email?: string): Promise<any[]>;
+    searchSubscriptions(email: string, schoolId: string): Promise<any[]>;
 
     /**
      * Verifica el estado de una transacción

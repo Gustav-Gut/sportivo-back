@@ -78,8 +78,8 @@ export class PaymentsService {
         return { link, subscriptionId: subscription.id };
     }
 
-    async getSubscriptions(email?: string) {
-        return this.paymentGateway.searchSubscriptions(email);
+    async getSubscriptions(email: string, schoolId: string) {
+        return this.paymentGateway.searchSubscriptions(email, schoolId);
     }
 
     async handleWebhook(body: any) {

@@ -12,7 +12,7 @@ export class PaymentsController {
         @Body() createPaymentDto: CreatePaymentDto,
         @Headers('x-school-id') schoolId: string
     ) {
-        if (!schoolId) throw new UnauthorizedException('School ID is required');
+        if (!schoolId) throw new UnauthorizedException('School ID is required header');
         return this.paymentsService.createPayment(
             createPaymentDto.amount,
             createPaymentDto.email,
@@ -26,7 +26,7 @@ export class PaymentsController {
         @Body() createSubscriptionDto: CreateSubscriptionDto,
         @Headers('x-school-id') schoolId: string
     ) {
-        if (!schoolId) throw new UnauthorizedException('School ID is required');
+        if (!schoolId) throw new UnauthorizedException('School ID is required header');
         return this.paymentsService.createSubscription(
             createSubscriptionDto.price,
             createSubscriptionDto.email,
@@ -37,8 +37,12 @@ export class PaymentsController {
     }
 
     @Get('subscriptions')
-    getSubscriptions(@Query('email') email?: string) {
-        return this.paymentsService.getSubscriptions(email);
+    getSubscriptions(
+        @Query('email') email: string,
+        @Headers('x-school-id') schoolId: string
+    ) {
+        if (!schoolId) throw new UnauthorizedException('School ID is required header');
+        return this.paymentsService.getSubscriptions(email, schoolId);
     }
 
     @Post('webhook')
