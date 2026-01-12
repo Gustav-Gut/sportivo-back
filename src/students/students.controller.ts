@@ -2,11 +2,14 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Headers, Unauthorize
 import { StudentsService } from './students.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @Controller('students')
 export class StudentsController {
   constructor(private readonly studentsService: StudentsService) { }
 
+  @Roles(Role.ADMIN)
   @Post()
   create(
     @Body() createStudentDto: CreateStudentDto,
@@ -39,6 +42,7 @@ export class StudentsController {
     return this.studentsService.update(id, updateStudentDto, schoolId);
   }
 
+  @Roles(Role.ADMIN)
   @Delete(':id')
   remove(
     @Param('id') id: string,
