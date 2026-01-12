@@ -6,6 +6,8 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
 
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || 'super-secret-test-key-123';
+
 describe('Auth Flow (e2e)', () => {
     let app: INestApplication;
     let prisma: PrismaService;
@@ -39,17 +41,20 @@ describe('Auth Flow (e2e)', () => {
         prisma = app.get(PrismaService);
 
         // 1. Limpiar BD (Orden estricto por Foreign Keys)
-        try { await prisma.subscription.deleteMany(); } catch { }
-        try { await prisma.payment.deleteMany(); } catch { }
-        try { await prisma.student.deleteMany(); } catch { }
-        try { await prisma.user.deleteMany(); } catch { }
-        try { await prisma.plan.deleteMany(); } catch { }
-        try { await prisma.school.deleteMany(); } catch { }
+        await prisma.subscription.deleteMany();
+        await prisma.payment.deleteMany();
+        await prisma.student.deleteMany();
+        await prisma.user.deleteMany();
+        await prisma.plan.deleteMany();
+        await prisma.school.deleteMany();
 
         // 2. Crear
+        // 2. Crear (Upsert para evitar colisiones)
         console.log('2. Seeding System School...');
-        const systemSchool = await prisma.school.create({
-            data: {
+        const systemSchool = await prisma.school.upsert({
+            where: { slug: 'system' },
+            update: {},
+            create: {
                 name: 'System School',
                 slug: 'system',
                 address: 'Cloud',
@@ -59,8 +64,15 @@ describe('Auth Flow (e2e)', () => {
 
         console.log('3. Seeding SuperAdmin...');
         const hashedPassword = await bcrypt.hash(superAdminData.password, 10);
-        await prisma.user.create({
-            data: {
+        await prisma.user.upsert({
+            where: {
+                email_schoolId: {
+                    email: superAdminData.email,
+                    schoolId: systemSchool.id
+                }
+            },
+            update: { password: hashedPassword, role: Role.SUPERADMIN },
+            create: {
                 ...superAdminData,
                 password: hashedPassword,
                 schoolId: systemSchool.id,
@@ -77,6 +89,7 @@ describe('Auth Flow (e2e)', () => {
     it('/auth/login (POST) - Login as SuperAdmin', async () => {
         const response = await request(app.getHttpServer())
             .post('/auth/login')
+            .set('x-internal-api-key', INTERNAL_API_KEY)
             .send({
                 email: superAdminData.email,
                 password: superAdminData.password,
@@ -93,7 +106,8 @@ describe('Auth Flow (e2e)', () => {
         const response = await request(app.getHttpServer())
             .post('/schools')
             .set('Authorization', `Bearer ${jwtToken}`)
-            .set('x-role', Role.SUPERADMIN) // Simulating KrakenD Header
+            .set('x-role', Role.SUPERADMIN)  // Simulating KrakenD Header
+            .set('x-internal-api-key', INTERNAL_API_KEY)
             .send(schoolData)
             .expect(201);
 
@@ -107,6 +121,7 @@ describe('Auth Flow (e2e)', () => {
             .get('/schools/all')
             .set('Authorization', `Bearer ${jwtToken}`)
             .set('x-role', Role.SUPERADMIN) // Simulating KrakenD Header
+            .set('x-internal-api-key', INTERNAL_API_KEY)
             .expect(200);
 
         const schools = response.body;
