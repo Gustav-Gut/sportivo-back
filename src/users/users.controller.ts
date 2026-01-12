@@ -4,11 +4,14 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) { }
 
+  @Roles(Role.ADMIN)
   @UseInterceptors(ClassSerializerInterceptor)
   @Post()
   async create(
@@ -19,6 +22,7 @@ export class UsersController {
     return new User(user)
   }
 
+  @Roles(Role.ADMIN)
   @UseInterceptors(ClassSerializerInterceptor)
   @Get()
   async findAll(@Headers('x-school-id') schoolId: string) {
@@ -27,6 +31,7 @@ export class UsersController {
     return users.map((user: User) => new User(user))
   }
 
+  @Roles(Role.ADMIN)
   @UseInterceptors(ClassSerializerInterceptor)
   @Get(':id')
   async findOne(
@@ -37,6 +42,7 @@ export class UsersController {
     return new User(user)
   }
 
+  @Roles(Role.ADMIN)
   @UseInterceptors(ClassSerializerInterceptor)
   @Patch(':id')
   async update(
@@ -48,6 +54,7 @@ export class UsersController {
     return new User(user)
   }
 
+  @Roles(Role.ADMIN)
   @UseInterceptors(ClassSerializerInterceptor)
   @Delete(':id')
   async remove(
