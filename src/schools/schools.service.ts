@@ -30,6 +30,17 @@ export class SchoolsService {
     return this.prisma.school.findUnique({ where: { id } });
   }
 
+  findBySlug(slug: string) {
+    return this.prisma.school.findUnique(
+      {
+        where: { slug },
+        select: {
+          id: true
+        }
+      }
+    );
+  }
+
   update(id: string, updateSchoolDto: UpdateSchoolDto) {
     return this.prisma.school.update({
       where: { id },

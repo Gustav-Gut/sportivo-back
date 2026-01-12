@@ -47,6 +47,16 @@ export class UsersService {
     });
   }
 
+  async findByEmail(email: string, schoolId: string) {
+    return this.prisma.user.findFirst({
+      where: {
+        email,
+        schoolId,
+        active: true,
+      },
+    });
+  }
+
   async findOne(id: string, schoolId: string) {
     return this.prisma.userWithoutPassword.user.findFirst({
       where: {
