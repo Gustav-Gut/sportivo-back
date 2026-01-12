@@ -110,6 +110,7 @@ model Payment {
 }
 
 enum Role {
+  SUPERADMIN
   ADMIN
   COACH
 }
