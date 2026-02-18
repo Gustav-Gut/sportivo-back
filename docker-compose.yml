@@ -1,0 +1,37 @@
+services:
+  sportivo_postgres:
+    container_name: sportivo_postgres
+    image: postgres:16
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: devpass
+      POSTGRES_DB: sportivo_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - sportivo_postgres_data:/var/lib/postgresql/data
+    networks:
+      - sportivo_network
+  sportivo-back:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sportivo_back
+    ports:
+      - '3000:3000'
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      # OJO: Aquí 'host' debe ser el nombre del servicio de la BD docker
+      DATABASE_URL: "postgresql://dev:devpass@sportivo_postgres:5432/sportivo_db?schema=public"
+    depends_on:
+      - sportivo_postgres
+    networks:
+      - sportivo_network
+volumes:
+  sportivo_postgres_data:
+networks:
+  sportivo_network:
+    name: sportivo_network
+    driver: bridge
