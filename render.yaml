@@ -1,13 +1,13 @@
 services:
   - type: web
     name: sportivo-backend
-    env: docker
+    env: node
     region: ohio
     plan: free
-    # Usar el Dockerfile específico de producción
-    dockerfilePath: ./Dockerfile.prod
-    # IMPORTANTE: Render ejecutará migrate deploy y luego arrancará tu app
-    dockerCommand: "npx prisma migrate deploy && npm run start:prod"
+    nodeVersion: 22.17.0
+    # Comandos nativos para construir y arrancar sin Docker
+    buildCommand: "npm ci && npx prisma generate && npm run build"
+    startCommand: "npx prisma migrate deploy && npm run start:prod"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
