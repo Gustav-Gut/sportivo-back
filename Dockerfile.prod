@@ -1,16 +1,39 @@
-FROM node:22.17-alpine
+# Etapa 1: Build y compilación
+FROM node:22.17-alpine AS builder
 WORKDIR /app
-# Instalar dependencias
+
+# Instalar TODAS las dependencias necesarias para compilar NestJS
 COPY package*.json ./
 COPY prisma ./prisma/
-RUN npm install
+RUN npm ci
 
-# Copiar el resto del código y construir
+# Copiar el código fuente
 COPY . .
+
+# Generar cliente Prisma (dummy para el build)
 RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma generate
+
+# IMPORTANTE: Compilar el proyecto NestJS (Esto genera la carpeta dist/)
 RUN npm run build
+
+# Etapa 2: Producción (Imagen más ligera)
+FROM node:22.17-alpine AS runner
+WORKDIR /app
+
+# Copiar package.json y dependencias de producción
+COPY package*.json ./
+COPY prisma ./prisma/
+RUN npm ci --only=production
+
+# Copiar la carpeta compilada desde la etapa anterior
+COPY --from=builder /app/dist ./dist
+# Copiar el cliente de Prisma generado
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 EXPOSE 3000
 
-# Usar el script de producción
-CMD ["npm", "run", "start:prod"]
+ENV NODE_ENV=production
+
+# Arrancar la aplicación compilada
+CMD ["node", "dist/main"]
