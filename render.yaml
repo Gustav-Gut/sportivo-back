@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: sportivo-backend
+    env: docker
+    region: ohio
+    plan: free
+    # Usar el Dockerfile específico de producción
+    dockerfilePath: ./Dockerfile.prod
+    # IMPORTANTE: Render ejecutará migrate deploy y luego arrancará tu app
+    dockerCommand: "npx prisma migrate deploy && npm run start:prod"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sportivo-db
+          property: connectionString
+      - key: PORT
+        value: "3000"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SALT_ROUNDS
+        value: "12"
+      # Las siguientes variables se marcaron con sync: false
+      # Esto significa que Render te pedirá que las llenes de forma segura en su Dashboard (UI)
+      - key: MERCADOPAGO_ACCESS_TOKEN
+        sync: false
+      - key: INTERNAL_API_KEY
+        sync: false
+
+databases:
+  - name: sportivo-db
+    databaseName: sportivodb
+    user: sportivouser
+    plan: free
+    region: ohio
