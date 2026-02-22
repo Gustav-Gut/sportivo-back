@@ -6,7 +6,7 @@ services:
     plan: free
     # Comandos nativos para construir y arrancar sin Docker
     buildCommand: "npm ci && npx prisma generate && npm run build"
-    startCommand: "npx prisma migrate deploy && npm run start:prod"
+    startCommand: "npx prisma migrate deploy && npx prisma db seed && npm run start:prod"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
