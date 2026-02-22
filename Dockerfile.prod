@@ -15,7 +15,7 @@ RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma gene
 
 # IMPORTANTE: Aumentar la memoria para compilar el proyecto NestJS sin que muera silenciosamente por OOM
 ENV NODE_OPTIONS="--max-old-space-size=4096"
-RUN npm run build && ls -la dist/
+RUN npm run build
 
 # Etapa 2: Producción (Imagen más ligera)
 FROM node:22.17-alpine AS runner
@@ -37,5 +37,5 @@ EXPOSE 3000
 
 ENV NODE_ENV=production
 
-# Arrancar la aplicación compilada
-CMD ["node", "dist/src/main"]
+# Arrancar la aplicación compilada usando el comando del package.json
+CMD ["npm", "run", "start:prod"]
