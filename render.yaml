@@ -14,7 +14,7 @@ services:
           property: connectionString
       - key: PORT
         value: "3000"
-      - key: NODE_VERSION           # <-- AQUÍ DEFINIMOS LA VERSIÓN DE NODE
+      - key: NODE_VERSION
         value: "22.17.0"
       - key: JWT_SECRET
         generateValue: true
