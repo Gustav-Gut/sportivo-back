@@ -21,48 +21,43 @@ model School {
   updatedAt     DateTime       @updatedAt
   active        Boolean        @default(true)
   users         User[]
-  students      Student[]
   plans         Plan[]
   subscriptions Subscription[]
   payments      Payment[]
 }
 
 model User {
-  id        String   @id @default(uuid())
-  rut       String
-  firstName String
-  lastName  String
-  email     String
-  phone     String?
-  password  String
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  schoolId  String
-  role      Role     @default(ADMIN)
-  school    School   @relation(fields: [schoolId], references: [id])
+  id               String        @id @default(uuid())
+  rut              String
+  firstName        String
+  lastName         String
+  email            String
+  phone            String?
+  password         String
+  active           Boolean       @default(true)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  schoolId         String
+  role             Role          @default(ADMIN)
+  school           School        @relation(fields: [schoolId], references: [id])
+  payments         Payment[]
+  subscription     Subscription?
+  tutorsRelation   UserTutor[]   @relation("StudentRelation")
+  studentsRelation UserTutor[]   @relation("TutorRelation")
 
   @@unique([rut, schoolId])
   @@unique([email, schoolId])
 }
 
-model Student {
-  id           String        @id @default(uuid())
-  rut          String
-  firstName    String
-  lastName     String
-  email        String
-  phone        String?
-  active       Boolean       @default(true)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  schoolId     String
-  payments     Payment[]
-  subscription Subscription?
-  school       School        @relation(fields: [schoolId], references: [id])
+model UserTutor {
+  id           String @id @default(uuid())
+  tutorId      String
+  studentId    String
+  relationType String
+  tutor        User   @relation("TutorRelation", fields: [tutorId], references: [id])
+  student      User   @relation("StudentRelation", fields: [studentId], references: [id])
 
-  @@unique([rut, schoolId])
-  @@unique([email, schoolId])
+  @@unique([tutorId, studentId])
 }
 
 model Plan {
@@ -87,11 +82,11 @@ model Subscription {
   externalId String?
   startDate  DateTime           @default(now())
   endDate    DateTime?
-  studentId  String             @unique
+  userId     String             @unique
   schoolId   String
   status     SubscriptionStatus @default(PENDING)
   school     School             @relation(fields: [schoolId], references: [id])
-  student    Student            @relation(fields: [studentId], references: [id])
+  user       User               @relation(fields: [userId], references: [id])
   plan       Plan               @relation(fields: [planId], references: [id])
 }
 
@@ -103,16 +98,18 @@ model Payment {
   externalId String?
   status     PaymentStatus   @default(PENDING)
   createdAt  DateTime        @default(now())
-  studentId  String
+  userId     String
   schoolId   String
   school     School          @relation(fields: [schoolId], references: [id])
-  student    Student         @relation(fields: [studentId], references: [id])
+  user       User            @relation(fields: [userId], references: [id])
 }
 
 enum Role {
   SUPERADMIN
   ADMIN
   COACH
+  TUTOR
+  STUDENT
 }
 
 enum SubscriptionStatus {
