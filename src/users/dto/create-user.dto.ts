@@ -1,5 +1,16 @@
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, ValidateNested, IsArray } from 'class-validator';
+import { Type } from 'class-transformer';
 import { Role } from '@prisma/client';
+
+export class CreateUserTutorDto {
+    @IsString()
+    @IsNotEmpty()
+    tutorId: string;
+
+    @IsString()
+    @IsNotEmpty()
+    relationType: string;
+}
 
 export class CreateUserDto {
     @IsString()
@@ -29,4 +40,10 @@ export class CreateUserDto {
     @IsEnum(Role)
     @IsNotEmpty()
     role: Role;
+
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => CreateUserTutorDto)
+    tutors?: CreateUserTutorDto[];
 }

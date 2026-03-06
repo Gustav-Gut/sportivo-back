@@ -12,12 +12,14 @@ export class UsersService {
     private configService: ConfigService) { }
 
   async create(createUserDto: CreateUserDto, schoolId: string) {
+    const { tutors, ...userData } = createUserDto;
+
     const exists = await this.prisma.userWithoutPassword.user.findFirst({
       where: {
         schoolId,
         OR: [
-          { email: createUserDto.email },
-          { rut: createUserDto.rut }
+          { email: userData.email },
+          { rut: userData.rut }
         ]
       }
     });
@@ -27,14 +29,35 @@ export class UsersService {
     }
 
     const rounds = Number(this.configService.get<number>('SALT_ROUNDS', 12));
-    const hashedPassword = await hashPassword(createUserDto.password, rounds);
+    const hashedPassword = await hashPassword(userData.password, rounds);
+
+    if (!tutors || tutors.length === 0) {
+      return this.prisma.user.create({
+        data: {
+          ...userData,
+          schoolId,
+          password: hashedPassword,
+        },
+      });
+    }
 
     return this.prisma.user.create({
       data: {
-        ...createUserDto,
+        ...userData,
         schoolId,
         password: hashedPassword,
+        tutorsRelation: {
+          create: tutors.map(tutor => ({
+            tutorId: tutor.tutorId,
+            relationType: tutor.relationType
+          }))
+        }
       },
+      include: {
+        tutorsRelation: {
+          include: { tutor: true }
+        }
+      }
     });
   }
 

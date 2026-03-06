@@ -2,7 +2,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { PaymentGateway } from './interfaces/payment-gateway.interface';
 
 import { PrismaService } from '../prisma/prisma.service';
-import { Student } from '@prisma/client';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class PaymentsService {
@@ -11,29 +11,29 @@ export class PaymentsService {
         private prismaService: PrismaService,
     ) { }
 
-    private async validateStudent(email: string, schoolId: string): Promise<Student> {
-        const student = await this.prismaService.student.findFirst({
+    private async validateUser(email: string, schoolId: string): Promise<User> {
+        const user = await this.prismaService.user.findFirst({
             where: {
                 email,
                 schoolId,
                 active: true
             },
         });
-        if (!student) {
-            throw new NotFoundException(`Student with email ${email} not found`);
+        if (!user) {
+            throw new NotFoundException(`User with email ${email} not found`);
         }
-        return student;
+        return user;
     }
 
     async createPayment(amount: number, email: string, description: string, schoolId: string) {
-        const student = await this.validateStudent(email, schoolId);
+        const user = await this.validateUser(email, schoolId);
 
         const newPayment = await this.prismaService.payment.create({
             data: {
                 amount: amount,
                 provider: this.paymentGateway.provider,
                 status: 'PENDING',
-                studentId: student.id,
+                userId: user.id,
                 schoolId: schoolId
             },
         });
@@ -49,17 +49,17 @@ export class PaymentsService {
     }
 
     async createSubscription(price: number, email: string, reason: string, frequency: number, schoolId: string) {
-        const student = await this.validateStudent(email, schoolId);
+        const user = await this.validateUser(email, schoolId);
 
         const subscription = await this.prismaService.subscription.upsert({
-            where: { studentId: student.id },
+            where: { userId: user.id },
             update: {
                 planId: reason,
                 status: 'PENDING',
                 startDate: new Date(),
             },
             create: {
-                studentId: student.id,
+                userId: user.id,
                 planId: reason,
                 provider: this.paymentGateway.provider,
                 status: 'PENDING',
