@@ -10,6 +10,12 @@ export class ApiKeyGuard implements CanActivate {
         context: ExecutionContext,
     ): boolean | Promise<boolean> | Observable<boolean> {
         const request = context.switchToHttp().getRequest();
+
+        // Permitir acceso a la documentación de Swagger
+        if (request.url.includes('/api/docs')) {
+            return true;
+        }
+
         const apiKey = request.headers['x-internal-api-key'];
         const validApiKey = this.configService.getOrThrow<string>('INTERNAL_API_KEY');
 

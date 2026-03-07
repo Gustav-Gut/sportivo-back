@@ -21,27 +21,44 @@
   <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
   [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository for Sportivo Backend.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🚀 Documentación (Swagger)
 
-## Project setup
+La documentación interactiva de la API está disponible en:
+👉 **`http://localhost:3000/api/docs`**
+
+Puedes usar el botón **Authorize** para ingresar tu JWT Token o Internal API Key y probar los endpoints protegidos directamente.
+
+## Instalación del Proyecto
 
 ```bash
 $ npm install
 ```
 
-## Compile and run the project
+## Ejecución
 
 ```bash
-# development
+# desarrollo
 $ npm run start
 
-# watch mode
+# modo watch
 $ npm run start:dev
 
-# production mode
+# modo producción
 $ npm run start:prod
+```
+
+## 🐳 Despliegue con Docker
+
+El proyecto está completamente contenedorizado. Para levantar todo el entorno (Backend + Base de Datos):
+
+```bash
+# Levantar todos los servicios
+docker-compose up --build
+
+# Ejecutar migraciones de Prisma dentro del contenedor (si es necesario)
+docker-compose exec sportivo-back npx prisma db push
 ```
 
 ## Run tests

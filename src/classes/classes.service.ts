@@ -10,6 +10,13 @@ export class ClassesService {
   constructor(private prisma: PrismaService) { }
 
   async create(createClassDto: CreateClassDto, schoolId: string) {
+    const { facilityId, dayOfWeek, startTime, endTime } = createClassDto;
+
+    // 1. Validar conflicto si hay cancha y horario definido
+    if (facilityId && dayOfWeek !== undefined && startTime && endTime) {
+      await this.checkScheduleConflict(facilityId, dayOfWeek, startTime, endTime);
+    }
+
     return this.prisma.class.create({
       data: {
         ...createClassDto,
@@ -74,10 +81,61 @@ export class ClassesService {
   }
 
   async update(id: string, updateClassDto: any, schoolId: string) {
+    const { facilityId, dayOfWeek, startTime, endTime } = updateClassDto;
+
+    if (facilityId || dayOfWeek !== undefined || startTime || endTime) {
+      // Obtener datos actuales para completar los campos que falten en el update parcial
+      const current = await this.findOne(id, schoolId);
+      const fId = facilityId || current.facilityId;
+      const dow = dayOfWeek !== undefined ? dayOfWeek : current.dayOfWeek;
+      const st = startTime || (current.startTime ? current.startTime.toISOString() : null);
+      const et = endTime || (current.endTime ? current.endTime.toISOString() : null);
+
+      if (fId && dow !== null && st && et) {
+        await this.checkScheduleConflict(fId, dow, st, et, id);
+      }
+    }
+
     return this.prisma.class.update({
       where: { id, schoolId },
       data: updateClassDto,
     });
+  }
+
+  private async checkScheduleConflict(
+    facilityId: string,
+    dayOfWeek: number,
+    startTime: string,
+    endTime: string,
+    excludeClassId?: string
+  ) {
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+
+    // Solo comparamos las HORAS, ignorando la FECHA (ya que es recurrente por día de semana)
+    const startHour = start.getUTCHours() * 60 + start.getUTCMinutes();
+    const endHour = end.getUTCHours() * 60 + end.getUTCMinutes();
+
+    const conflicts = await this.prisma.class.findMany({
+      where: {
+        facilityId,
+        dayOfWeek,
+        active: true,
+        id: excludeClassId ? { not: excludeClassId } : undefined
+      }
+    });
+
+    for (const c of conflicts) {
+      if (!c.startTime || !c.endTime) continue;
+
+      const cStart = new Date(c.startTime).getUTCHours() * 60 + new Date(c.startTime).getUTCMinutes();
+      const cEnd = new Date(c.endTime).getUTCHours() * 60 + new Date(c.endTime).getUTCMinutes();
+
+      // Lógica de traslape: (Start1 < End2) AND (End1 > Start2)
+      if (startHour < cEnd && endHour > cStart) {
+        throw new ConflictException(`La cancha ya está ocupada por la clase "${c.name}" en ese horario.`);
+      }
+    }
   }
 
   async remove(id: string, schoolId: string) {

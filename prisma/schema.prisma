@@ -239,7 +239,10 @@ model Class {
   sportId  String
   coachId  String? // El profesor a cargo
 
-  schedule    String? // Ej: "Lunes 18:00 - 20:00"
+  schedule    String? // Ej: "Lunes 18:00 - 20:00" (Legacy)
+  dayOfWeek   Int?    // 0 = Domingo, 1 = Lunes, etc.
+  startTime   DateTime?
+  endTime     DateTime?
   maxStudents Int? // Límite de cupos dinámico por clase
   active      Boolean @default(true)
 

@@ -68,13 +68,31 @@ describe('Enterprise Flow (Integration Test)', () => {
             name: 'Selectivo Sub-17',
             sportId: sport.id,
             facilityId: cancha.id,
-            schedule: 'Martes 17:00 - 19:00',
+            dayOfWeek: 2, // Martes
+            startTime: new Date('2024-01-01T17:00:00Z').toISOString(),
+            endTime: new Date('2024-01-01T19:00:00Z').toISOString(),
             maxStudents: 22
         }, school!.id);
         expect(claseSeba.facilityId).toBe(cancha.id);
         console.log(`✅ Clase creada: ${claseSeba.name} asignada a ${cancha.name}`);
 
-        // 4. Verificar Calendario
+        // 3.1. Intentar crear una clase que choque en horario
+        console.log('\n--- Probando validación de conflictos ---');
+        try {
+            await classesService.create({
+                name: 'Clase Fantasma (Choque)',
+                sportId: sport.id,
+                facilityId: cancha.id,
+                dayOfWeek: 2, // Mismo día
+                startTime: new Date('2024-01-01T18:00:00Z').toISOString(), // Choca con 17:00-19:00
+                endTime: new Date('2024-01-01T20:00:00Z').toISOString(),
+                maxStudents: 10
+            }, school!.id);
+            fail('Debería haber lanzado un ConflictException');
+        } catch (error) {
+            expect(error.status).toBe(409); // Conflict
+            console.log(`✅ Validación exitosa: ${error.message}`);
+        }
         const calendar = await facilitiesService.getCalendar(school!.id);
         console.log('\n--- VISTA DE CALENDARIO (CRUCE CLASES vs CANCHAS) ---');
         console.dir(calendar, { depth: null });
