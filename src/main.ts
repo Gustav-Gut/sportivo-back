@@ -5,10 +5,12 @@ import { PrismaClientExceptionFilter } from './prisma/prisma-exception.filter';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   try {
     const app = await NestFactory.create(AppModule);
+    const configService = app.get(ConfigService);
 
     app.useGlobalPipes(new ValidationPipe({
       whitelist: true,
@@ -32,9 +34,19 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api/docs', app, document);
 
-    const port = process.env.PORT || 3000;
-    await app.listen(port);
-    console.log(`Application is running on port: ${port}`);
+    const frontendUrls = configService.get<string>('FRONTEND_URLS');
+    const allowedOrigins = frontendUrls
+      ? frontendUrls.split(',').map(url => url.trim())
+      : ['http://localhost:4200'];
+
+    app.enableCors({
+      origin: allowedOrigins,
+      credentials: true,
+    });
+
+    const port = configService.get<number>('PORT') || 3000;
+
+    console.log(`Application is running on port: ${port}`); ``
     console.log(`Swagger documentation available at: http://localhost:${port}/api/docs`);
   } catch (error) {
     console.error('Error starting the application:', error);
