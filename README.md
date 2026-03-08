@@ -98,7 +98,7 @@ erDiagram
     School ||--o{ User : "tiene"
     School ||--o{ Plan : "ofrece"
     School ||--o{ Facility : "posee"
-    School ||--o{ Class : "organiza"
+    School ||--o{ "Class" : "organiza"
     
     User ||--o{ StudentProfile : "perfil de"
     User ||--o{ TutorProfile : "perfil de"
@@ -111,15 +111,15 @@ erDiagram
     Subscription ||--|| User : "pagador (tutor)"
     Subscription ||--|| Plan : "basado en"
     
-    Class }o--|| Sport : "de"
-    Class }o--|| Facility : "en"
-    Class }o--|| User : "coach"
+    "Class" }o--|| Sport : "de"
+    "Class" }o--|| Facility : "en"
+    "Class" }o--|| User : "coach"
     
-    ClassEnrollment }o--|| Class : "clase"
+    ClassEnrollment }o--|| "Class" : "clase"
     ClassEnrollment }o--|| User : "alumno"
     
     AttendanceSession ||--o{ AttendanceRecord : "contiene"
-    AttendanceSession ||--|| Class : "de la clase"
+    AttendanceSession ||--|| "Class" : "de la clase"
 ```
 
 ### 🔑 Entidades Clave
