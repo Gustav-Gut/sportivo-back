@@ -54,24 +54,29 @@ export class PaymentsService {
         // Si no se provee studentId, el pagador es el estudiante (adulto)
         const targetStudentId = studentId || payer.id;
 
-        const subscription = await this.prismaService.subscription.upsert({
-            where: { studentId: targetStudentId },
-            update: {
-                plan: { connect: { id: reason } },
-                status: 'PENDING',
-                startDate: new Date(),
-                payer: { connect: { id: payer.id } },
-                school: { connect: { id: schoolId } }
-            } as any,
-            create: {
-                student: { connect: { id: targetStudentId } },
-                payer: { connect: { id: payer.id } },
-                plan: { connect: { id: reason } },
-                provider: this.paymentGateway.provider as any,
-                status: 'PENDING',
-                school: { connect: { id: schoolId } }
-            } as any,
+        let subscription = await this.prismaService.subscription.findFirst({
+            where: { studentId: targetStudentId, status: { in: ['PENDING', 'ACTIVE'] } }
         });
+        if (subscription) {
+            subscription = await this.prismaService.subscription.update({
+                where: { id: subscription.id },
+                data: {
+                    planId: reason,
+                    payerId: payer.id
+                }
+            });
+        } else {
+            subscription = await this.prismaService.subscription.create({
+                data: {
+                    studentId: targetStudentId,
+                    payerId: payer.id,
+                    planId: reason,
+                    provider: this.paymentGateway.provider as any,
+                    status: 'PENDING',
+                    schoolId: schoolId
+                }
+            });
+        }
 
         const link = await this.paymentGateway.createSubscription(
             price,
