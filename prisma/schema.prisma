@@ -17,8 +17,6 @@ model School {
   name          String
   slug          String         @unique
   address       String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
   active        Boolean        @default(true)
   users         User[]
   plans         Plan[]
@@ -27,37 +25,36 @@ model School {
   sports        SchoolSport[]
   lessons       Lesson[]
   facilities    Facility[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model User {
-  id                  String          @id @default(uuid())
+  id                  String              @id @default(uuid())
   rut                 String
   firstName           String
   lastName            String
   email               String
   phone               String?
   password            String
-  active              Boolean         @default(true)
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
+  active              Boolean             @default(true)
   schoolId            String
-  role                Role            @default(ADMIN)
-  // Relaciones 1-a-1 a los perfiles
+  role                Role                @default(ADMIN)
   studentProfile      StudentProfile?
   tutorProfile        TutorProfile?
   coachProfile        CoachProfile?
-  school              School          @relation(fields: [schoolId], references: [id])
   payments            Payment[]
-  paidSubscriptions   Subscription[]  @relation("PayerSubscriptions")
-  studentSubscription Subscription?   @relation("StudentSubscriptions")
-  tutorsRelation      UserTutor[]     @relation("StudentRelation")
-  studentsRelation    UserTutor[]     @relation("TutorRelation")
-
-  // Relaciones de Clases y Asistencia (Coach y Student)
-  coachedLessons    Lesson[]            @relation("CoachLesson")
-  enrollments       LessonEnrollment[]
-  attendanceTaken   AttendanceSession[] @relation("SessionCoach")
-  attendanceRecords AttendanceRecord[]
+  enrollments         LessonEnrollment[]
+  attendanceRecords   AttendanceRecord[]
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  school              School              @relation(fields: [schoolId], references: [id])
+  paidSubscriptions   Subscription[]      @relation("PayerSubscriptions")
+  studentSubscription Subscription[]      @relation("StudentSubscriptions")
+  tutorsRelation      UserTutor[]         @relation("StudentRelation")
+  studentsRelation    UserTutor[]         @relation("TutorRelation")
+  coachedLessons      Lesson[]            @relation("CoachLesson")
+  attendanceTaken     AttendanceSession[] @relation("SessionCoach")
 
   @@unique([rut, schoolId])
   @@unique([email, schoolId])
@@ -81,45 +78,169 @@ model Plan {
   price          Float
   durationMonths Int            @default(1)
   active         Boolean        @default(true)
-  createdAt      DateTime       @default(now())
   schoolId       String
   subscriptions  Subscription[]
+  createdAt      DateTime       @default(now())
   school         School         @relation(fields: [schoolId], references: [id])
 
   @@unique([name, schoolId])
 }
 
 model Subscription {
-  id         String          @id @default(uuid())
+  id         String             @id @default(uuid())
   planId     String
-  provider   PaymentProvider
   externalId String?
-  startDate  DateTime        @default(now())
+  startDate  DateTime           @default(now())
   endDate    DateTime?
-
-  payerId   String
-  studentId String @unique // El estudiante (beneficiario) solo puede tener 1 suscripción activa
-
-  schoolId String
-  status   SubscriptionStatus @default(PENDING)
-  school   School             @relation(fields: [schoolId], references: [id])
-  payer    User               @relation("PayerSubscriptions", fields: [payerId], references: [id])
-  student  User               @relation("StudentSubscriptions", fields: [studentId], references: [id])
-  plan     Plan               @relation(fields: [planId], references: [id])
+  payerId    String
+  studentId  String
+  schoolId   String
+  provider   PaymentProvider
+  status     SubscriptionStatus @default(PENDING)
+  payments   Payment[]
+  school     School             @relation(fields: [schoolId], references: [id])
+  payer      User               @relation("PayerSubscriptions", fields: [payerId], references: [id])
+  student    User               @relation("StudentSubscriptions", fields: [studentId], references: [id])
+  plan       Plan               @relation(fields: [planId], references: [id])
 }
 
 model Payment {
-  id         String          @id @default(uuid())
-  amount     Float
-  currency   String          @default("CLP")
-  provider   PaymentProvider
-  externalId String?
-  status     PaymentStatus   @default(PENDING)
-  createdAt  DateTime        @default(now())
-  payerId    String
-  schoolId   String
-  school     School          @relation(fields: [schoolId], references: [id])
-  payer      User            @relation(fields: [payerId], references: [id])
+  id             String          @id @default(uuid())
+  amount         Float
+  currency       String          @default("CLP")
+  externalId     String?
+  payerId        String
+  schoolId       String
+  provider       PaymentProvider
+  status         PaymentStatus   @default(PENDING)
+  subscriptionId String
+  subscription   Subscription    @relation(fields: [subscriptionId], references: [id])
+  createdAt      DateTime        @default(now())
+  school         School          @relation(fields: [schoolId], references: [id])
+  payer          User            @relation(fields: [payerId], references: [id])
+}
+
+model StudentProfile {
+  id           String    @id @default(uuid())
+  userId       String    @unique
+  birthDate    DateTime?
+  weight       Float?
+  height       Float?
+  bloodType    String?
+  medicalNotes String?
+  sportData    Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Sport {
+  id            String        @id @default(uuid())
+  name          String        @unique
+  defaultFields Json
+  schools       SchoolSport[]
+  lessons       Lesson[]
+}
+
+model SchoolSport {
+  id           String @id @default(uuid())
+  schoolId     String
+  sportId      String
+  customFields Json?
+  school       School @relation(fields: [schoolId], references: [id])
+  sport        Sport  @relation(fields: [sportId], references: [id])
+
+  @@unique([schoolId, sportId])
+}
+
+model TutorProfile {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  emergencyContact String?
+  address          String?
+  occupation       String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CoachProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  bio             String?
+  specialty       String?
+  yearsExperience Int?
+  certifications  String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Lesson {
+  id          String              @id @default(uuid())
+  name        String
+  schoolId    String
+  sportId     String
+  coachId     String
+  dayOfWeek   DayOfWeek
+  startTime   String
+  endTime     String
+  maxStudents Int
+  active      Boolean             @default(true)
+  facilityId  String
+  enrollments LessonEnrollment[]
+  sessions    AttendanceSession[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  school      School              @relation(fields: [schoolId], references: [id])
+  sport       Sport               @relation(fields: [sportId], references: [id])
+  coach       User                @relation("CoachLesson", fields: [coachId], references: [id])
+  facility    Facility            @relation(fields: [facilityId], references: [id])
+}
+
+model Facility {
+  id        String   @id @default(uuid())
+  name      String
+  schoolId  String
+  lessons   Lesson[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  school    School   @relation(fields: [schoolId], references: [id])
+}
+
+model LessonEnrollment {
+  id         String   @id @default(uuid())
+  lessonId   String
+  studentId  String
+  enrolledAt DateTime @default(now())
+  lesson     Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  student    User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, studentId])
+}
+
+model AttendanceSession {
+  id        String             @id @default(uuid())
+  lessonId  String
+  coachId   String
+  date      DateTime           @default(now())
+  records   AttendanceRecord[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  lesson    Lesson             @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  coach     User               @relation("SessionCoach", fields: [coachId], references: [id])
+}
+
+model AttendanceRecord {
+  id        String            @id @default(uuid())
+  sessionId String
+  studentId String
+  notes     String?
+  status    AttendanceStatus  @default(PRESENT)
+  session   AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student   User              @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, studentId])
 }
 
 enum Role {
@@ -150,157 +271,6 @@ enum PaymentProvider {
   STRIPE
 }
 
-model StudentProfile {
-  id     String @id @default(uuid())
-  userId String @unique // Clave para la relación 1 a 1
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Campos Físicos / Biológicos
-  birthDate    DateTime?
-  weight       Float? // en kg
-  height       Float? // en cm
-  bloodType    String? // ej: 'O+', 'A-'
-  medicalNotes String? // Alergias, asma, lesiones previas
-
-  // Campos deportivos dinámicos (Custom Fields)
-  sportData Json?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Sport {
-  id   String @id @default(uuid())
-  name String @unique // Ej: "Fútbol", "Básquetbol"
-
-  // La plantilla base de cómo se ve la ficha deportiva
-  // Ej: [{"key": "position", "label": "Posición", "type": "select", "options": ["Portero", "Defensa"]}]
-  defaultFields Json
-
-  schools SchoolSport[]
-  lessons Lesson[]
-}
-
-model SchoolSport {
-  id       String @id @default(uuid())
-  schoolId String
-  sportId  String
-
-  school School @relation(fields: [schoolId], references: [id])
-  sport  Sport  @relation(fields: [sportId], references: [id])
-
-  // Si la escuela quiere agregar campos extra o cambiar los tuyos, se guarda aquí.
-  // Si está vacío, tu Frontend usa los 'defaultFields' del Sport.
-  customFields Json?
-
-  @@unique([schoolId, sportId])
-}
-
-model TutorProfile {
-  id     String @id @default(uuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Información de contacto en caso de emergencia si se requiere algo extra
-  emergencyContact String? // Un número secundario
-  address          String?
-  occupation       String? // A veces útil para patrocinios o conocer a la comunidad
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model CoachProfile {
-  id     String @id @default(uuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Resumen profesional
-  bio             String? // Pequeña descripción
-  specialty       String? // Ej: "Preparador Físico", "Técnico Táctico"
-  yearsExperience Int?
-
-  // Títulos o certificaciones
-  certifications String? // Ej: "Licencia PRO INAF"
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// ----------------------------------------------------
-// MÓDULO LECCIONES (GROUPS) Y ASISTENCIA (ATTENDANCE)
-// ----------------------------------------------------
-
-model Lesson {
-  id   String @id @default(uuid())
-  name String // Ej: "Sub-12 Martes/Jueves"
-
-  schoolId String
-  sportId  String
-  coachId  String? // El profesor a cargo
-
-  schedule    String? // Ej: "Lunes 18:00 - 20:00" (Legacy)
-  dayOfWeek   Int? // 0 = Domingo, 1 = Lunes, etc.
-  startTime   DateTime?
-  endTime     DateTime?
-  maxStudents Int? // Límite de cupos dinámico por clase
-  active      Boolean   @default(true)
-
-  school School @relation(fields: [schoolId], references: [id])
-  sport  Sport  @relation(fields: [sportId], references: [id])
-  coach  User?  @relation("CoachLesson", fields: [coachId], references: [id])
-
-  facilityId String?
-  facility   Facility? @relation(fields: [facilityId], references: [id])
-
-  enrollments LessonEnrollment[]
-  sessions    AttendanceSession[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model LessonEnrollment {
-  id        String @id @default(uuid())
-  lessonId  String
-  studentId String
-
-  enrolledAt DateTime @default(now())
-
-  lesson  Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
-  @@unique([lessonId, studentId]) // Un alumno no puede inscribirse dos veces en la misma clase
-}
-
-model AttendanceSession {
-  id       String   @id @default(uuid())
-  lessonId String
-  coachId  String // Quién tomó la lista
-  date     DateTime @default(now()) // La fecha de la clase dictada
-
-  lesson  Lesson             @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  coach   User               @relation("SessionCoach", fields: [coachId], references: [id])
-  records AttendanceRecord[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model AttendanceRecord {
-  id        String @id @default(uuid())
-  sessionId String
-  studentId String
-
-  status AttendanceStatus @default(PRESENT)
-  notes  String? // Justificaciones ("Llegó enfermo", "Permiso del doctor")
-
-  session AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  student User              @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
-  @@unique([sessionId, studentId]) // Un registro por alumno, por sesión
-}
-
 enum AttendanceStatus {
   PRESENT
   ABSENT
@@ -308,13 +278,12 @@ enum AttendanceStatus {
   EXCUSED
 }
 
-model Facility {
-  id       String   @id @default(uuid())
-  name     String // Ej: "Cancha de Pasto 1", "Gimnasio Techado"
-  schoolId String
-  school   School   @relation(fields: [schoolId], references: [id])
-  lessons  Lesson[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
 }
