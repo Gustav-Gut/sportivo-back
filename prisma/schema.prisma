@@ -39,7 +39,7 @@ model User {
   password            String
   active              Boolean             @default(true)
   schoolId            String
-  role                Role                @default(ADMIN)
+  role                Role[]              @default([STUDENT])
   studentProfile      StudentProfile?
   tutorProfile        TutorProfile?
   coachProfile        CoachProfile?

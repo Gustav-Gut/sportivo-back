@@ -62,9 +62,10 @@ export class CreateUserDto {
     @IsOptional()
     phone?: string;
 
-    @IsEnum(Role)
+    @IsArray()
+    @IsEnum(Role, { each: true })
     @IsNotEmpty()
-    role: Role;
+    roles: Role[];
 
     @IsOptional()
     @ValidateNested()

@@ -1,5 +1,6 @@
-import { IsString, IsNotEmpty, IsOptional, IsInt, Min, IsBoolean } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsInt, Min, IsBoolean, IsEnum, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { DayOfWeek } from '@prisma/client';
 
 export class CreateLessonDto {
     @ApiProperty({ example: 'Selectivo Sub-17', description: 'Nombre de la lección' })
@@ -12,40 +13,34 @@ export class CreateLessonDto {
     @IsNotEmpty()
     sportId: string;
 
-    @ApiProperty({ example: 'uuid-coach-123', description: 'ID del profesor (opcional)', required: false })
+    @ApiProperty({ example: 'uuid-coach-123', description: 'ID del profesor' })
     @IsString()
-    @IsOptional()
-    coachId?: string;
+    coachId: string;
 
-    @ApiProperty({ example: 2, description: 'Día de la semana (0=Dom, 1=Lun, etc.)', required: false })
-    @IsInt()
-    @Min(0)
-    @IsOptional()
-    dayOfWeek?: number;
+    @ApiProperty({ example: 'MONDAY', enum: DayOfWeek, description: 'Día de la semana' })
+    @IsEnum(DayOfWeek)
+    dayOfWeek: DayOfWeek;
 
-    @ApiProperty({ example: '2024-01-01T17:00:00Z', description: 'Hora de inicio (ISO)', required: false })
+    @ApiProperty({ example: '17:00', description: 'Hora de inicio (HH:mm)' })
     @IsString()
-    @IsOptional()
-    startTime?: string;
+    @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'startTime must be in HH:mm format' })
+    startTime: string;
 
-    @ApiProperty({ example: '2024-01-01T19:00:00Z', description: 'Hora de fin (ISO)', required: false })
+    @ApiProperty({ example: '19:00', description: 'Hora de fin (HH:mm)' })
     @IsString()
-    @IsOptional()
-    endTime?: string;
+    @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'endTime must be in HH:mm format' })
+    endTime: string;
 
-    @ApiProperty({ example: 'uuid-cancha-123', description: 'ID de la instalación', required: false })
+    @ApiProperty({ example: 'uuid-cancha-123', description: 'ID de la instalación' })
     @IsString()
-    @IsOptional()
-    facilityId?: string;
+    facilityId: string;
 
-    @ApiProperty({ example: 22, description: 'Límite de alumnos', required: false })
+    @ApiProperty({ example: 22, description: 'Límite de alumnos' })
     @IsInt()
     @Min(1)
-    @IsOptional()
-    maxStudents?: number;
+    maxStudents: number;
 
-    @ApiProperty({ example: true, description: 'Estado de la lección', required: false })
+    @ApiProperty({ example: true, description: 'Estado de la lección' })
     @IsBoolean()
-    @IsOptional()
-    active?: boolean;
+    active: boolean;
 }

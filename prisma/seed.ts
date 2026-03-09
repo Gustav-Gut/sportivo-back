@@ -33,7 +33,7 @@ async function main() {
             rut: '16615578-9',
             email: 'gustav@sportivo.com',
             password: hashedPassword,
-            role: 'SUPERADMIN',
+            role: ['SUPERADMIN'],
             schoolId: school.id,
         },
     });

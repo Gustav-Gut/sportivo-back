@@ -12,7 +12,7 @@ export const CurrentSchoolId = createParamDecorator(
 
         // Si es SUPERADMIN y manda el header 'x-school-id', se lo permitimos para que pueda
         // operar en nombre de otra escuela. Si no lo manda, usamos el schoolId de su JWT.
-        if (user.role === Role.SUPERADMIN) {
+        if (user.roles && user.roles.includes(Role.SUPERADMIN)) {
             const simulatedSchoolId = request.headers['x-school-id'];
             if (simulatedSchoolId) {
                 return simulatedSchoolId;

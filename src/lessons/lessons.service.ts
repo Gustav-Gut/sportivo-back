@@ -3,7 +3,7 @@ import { CreateLessonDto } from './dto/create-lesson.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { EnrollStudentDto } from './dto/enroll-student.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
-import { Role } from '@prisma/client';
+import { Role, DayOfWeek } from '@prisma/client';
 
 @Injectable()
 export class LessonsService {
@@ -13,7 +13,7 @@ export class LessonsService {
     const { facilityId, dayOfWeek, startTime, endTime } = createLessonDto;
 
     // 1. Validar conflicto si hay cancha y horario definido
-    if (facilityId && dayOfWeek !== undefined && startTime && endTime) {
+    if (facilityId && dayOfWeek && startTime && endTime) {
       await this.checkScheduleConflict(facilityId, dayOfWeek, startTime, endTime);
     }
 
@@ -25,7 +25,7 @@ export class LessonsService {
     });
   }
 
-  async findAll(schoolId: string, user: { id: string, role: string }, pagination?: PaginationDto, search?: string) {
+  async findAll(schoolId: string, user: { id: string, roles: Role[] }, pagination?: PaginationDto, search?: string) {
     const { page = 1, limit = 10 } = pagination || {};
     const skip = (page - 1) * limit;
 
@@ -40,7 +40,7 @@ export class LessonsService {
         ]
       })
     };
-    if (user.role === Role.COACH) {
+    if (user.roles.includes(Role.COACH)) {
       whereClause.coachId = user.id;
     }
 
@@ -92,15 +92,15 @@ export class LessonsService {
   async update(id: string, updateLessonDto: any, schoolId: string) {
     const { facilityId, dayOfWeek, startTime, endTime } = updateLessonDto;
 
-    if (facilityId || dayOfWeek !== undefined || startTime || endTime) {
+    if (facilityId || dayOfWeek || startTime || endTime) {
       // Obtener datos actuales para completar los campos que falten en el update parcial
       const current = await this.findOne(id, schoolId);
       const fId = facilityId || current.facilityId;
-      const dow = dayOfWeek !== undefined ? dayOfWeek : current.dayOfWeek;
-      const st = startTime || (current.startTime ? current.startTime.toISOString() : null);
-      const et = endTime || (current.endTime ? current.endTime.toISOString() : null);
+      const dow = dayOfWeek || current.dayOfWeek;
+      const st = startTime || current.startTime;
+      const et = endTime || current.endTime;
 
-      if (fId && dow !== null && st && et) {
+      if (fId && dow && st && et) {
         await this.checkScheduleConflict(fId, dow, st, et, id);
       }
     }
@@ -113,17 +113,17 @@ export class LessonsService {
 
   private async checkScheduleConflict(
     facilityId: string,
-    dayOfWeek: number,
+    dayOfWeek: DayOfWeek,
     startTime: string,
     endTime: string,
     excludelessonId?: string
   ) {
-    const start = new Date(startTime);
-    const end = new Date(endTime);
+    // Almacenamos la pura hora tipo 18:00
+    // Convertimos de HH:mm a Minutos Totales para cálculo matemático simple
+    const processTime = (t: string) => parseInt(t.split(':')[0]) * 60 + parseInt(t.split(':')[1]);
 
-    // Solo comparamos las HORAS, ignorando la FECHA (ya que es recurrente por día de semana)
-    const startHour = start.getUTCHours() * 60 + start.getUTCMinutes();
-    const endHour = end.getUTCHours() * 60 + end.getUTCMinutes();
+    const startMins = processTime(startTime);
+    const endMins = processTime(endTime);
 
     const conflicts = await this.prisma.lesson.findMany({
       where: {
@@ -137,11 +137,11 @@ export class LessonsService {
     for (const c of conflicts) {
       if (!c.startTime || !c.endTime) continue;
 
-      const cStart = new Date(c.startTime).getUTCHours() * 60 + new Date(c.startTime).getUTCMinutes();
-      const cEnd = new Date(c.endTime).getUTCHours() * 60 + new Date(c.endTime).getUTCMinutes();
+      const cStart = processTime(c.startTime);
+      const cEnd = processTime(c.endTime);
 
-      // Lógica de traslape: (StartHour1 < EndHour2) AND (EndHour1 > StartHour2)
-      if (startHour < cEnd && endHour > cStart) {
+      // Lógica de traslape: (StartMin1 < EndMin2) AND (EndMin1 > StartMin2)
+      if (startMins < cEnd && endMins > cStart) {
         throw new ConflictException(`La cancha ya está ocupada por la lección "${c.name}" en ese horario.`);
       }
     }

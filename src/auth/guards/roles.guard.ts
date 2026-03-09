@@ -22,11 +22,15 @@ export class RolesGuard implements CanActivate {
             return true;
         }
 
-        const userRole = request.headers['x-role'];
+        const user = request.user;
 
-        if (userRole === Role.SUPERADMIN) return true;
+        if (!user || !user.roles) {
+            throw new ForbiddenException('No valid roles found');
+        }
 
-        const hasRole = requiredRoles.some((role) => userRole === role);
+        if (user.roles.includes(Role.SUPERADMIN)) return true;
+
+        const hasRole = requiredRoles.some((role) => user.roles.includes(role));
 
         if (!hasRole) {
             throw new ForbiddenException('Don\'t have permission for this action');

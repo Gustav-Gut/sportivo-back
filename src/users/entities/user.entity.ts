@@ -13,7 +13,7 @@ export class User {
     createdAt: Date;
     updatedAt: Date;
     schoolId: string;
-    role: Role;
+    roles: Role[];
 
     @Exclude()
     password: string;
