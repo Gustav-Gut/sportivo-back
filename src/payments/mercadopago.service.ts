@@ -118,6 +118,7 @@ export class MercadoPagoService implements PaymentGateway {
             return {
                 status: response.status!,
                 externalId: response.external_reference!,
+                amount: response.transaction_amount,
             };
         } catch (error) {
             throw new InternalServerErrorException('Error fetching payment status');
@@ -131,6 +132,7 @@ export class MercadoPagoService implements PaymentGateway {
             return {
                 status: response.status!, // 'authorized' o 'cancelled'
                 externalId: response.external_reference!,
+                amount: response.auto_recurring?.transaction_amount,
             };
         } catch (error) {
             throw new InternalServerErrorException('Error fetching subscription status');

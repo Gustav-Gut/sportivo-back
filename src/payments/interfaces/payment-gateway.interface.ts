@@ -3,6 +3,7 @@ import { PaymentProvider } from "@prisma/client";
 export interface PaymentDetails {
     status: string;
     externalId: string; // Nuestro UUID
+    amount?: number;
 }
 
 export interface PaymentGateway {

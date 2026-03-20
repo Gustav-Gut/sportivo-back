@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Get, Query, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Post, Get, Query, Param, UnauthorizedException } from '@nestjs/common';
 import { CurrentSchoolId } from '../auth/decorators/current-school-id.decorator';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -27,10 +27,8 @@ export class PaymentsController {
         @CurrentSchoolId() schoolId: string
     ) {
         return this.paymentsService.createSubscription(
-            createSubscriptionDto.price,
+            createSubscriptionDto.planId,
             createSubscriptionDto.email,
-            createSubscriptionDto.reason,
-            createSubscriptionDto.frequency,
             schoolId,
             createSubscriptionDto.studentId,
         );
@@ -42,6 +40,13 @@ export class PaymentsController {
         @CurrentSchoolId() schoolId: string
     ) {
         return this.paymentsService.getSubscriptions(email, schoolId);
+    }
+
+    @Get('schedule/:subscriptionId')
+    getPaymentSchedule(
+        @Param('subscriptionId') subscriptionId: string,
+    ) {
+        return this.paymentsService.getPaymentSchedule(subscriptionId);
     }
 
     @Post('webhook')

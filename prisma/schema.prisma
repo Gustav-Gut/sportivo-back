@@ -113,6 +113,8 @@ model Payment {
   schoolId       String
   provider       PaymentProvider
   status         PaymentStatus   @default(PENDING)
+  dueDate        DateTime?
+  paidAt         DateTime?
   subscriptionId String
   subscription   Subscription    @relation(fields: [subscriptionId], references: [id])
   createdAt      DateTime        @default(now())
@@ -143,13 +145,13 @@ model Sport {
 }
 
 model SchoolSport {
-  id           String @id @default(uuid())
+  id           String  @id @default(uuid())
   schoolId     String
   sportId      String
   customFields Json?
   active       Boolean @default(true)
-  school       School @relation(fields: [schoolId], references: [id])
-  sport        Sport  @relation(fields: [sportId], references: [id])
+  school       School  @relation(fields: [schoolId], references: [id])
+  sport        Sport   @relation(fields: [sportId], references: [id])
 
   @@unique([schoolId, sportId])
 }

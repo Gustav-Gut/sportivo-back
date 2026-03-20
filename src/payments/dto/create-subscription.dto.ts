@@ -1,29 +1,18 @@
-import { IsEmail, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, Min } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateSubscriptionDto {
-    @ApiProperty({ example: 45000, description: 'Precio de la suscripción' })
-    @IsNumber()
-    @IsPositive()
-    @Min(100)
-    price: number;
+    @ApiProperty({ example: 'uuid-plan-123', description: 'ID del plan a suscribir' })
+    @IsUUID()
+    @IsNotEmpty()
+    planId: string;
 
     @ApiProperty({ example: 'papa@test.com', description: 'Email del pagador' })
     @IsEmail()
     @IsNotEmpty()
     email: string;
 
-    @ApiProperty({ example: 'Plan Mensual Sub-17', description: 'Nombre o ID del plan' })
-    @IsString()
-    @IsNotEmpty()
-    reason: string;
-
-    @ApiProperty({ example: 1, description: 'Frecuencia en meses' })
-    @IsNumber()
-    @IsPositive()
-    frequency: number; // Meses
-
-    @ApiProperty({ example: 'uuid-estudiante-123', description: 'ID del estudiante (opcional)', required: false })
+    @ApiProperty({ example: 'uuid-estudiante-123', description: 'ID del estudiante (opcional, si el pagador es el tutor)', required: false })
     @IsString()
     @IsOptional()
     studentId?: string;
