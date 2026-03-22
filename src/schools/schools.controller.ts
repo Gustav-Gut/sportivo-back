@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { CurrentSchoolId } from '../auth/decorators/current-school-id.decorator';
 import { SchoolsService } from './schools.service';
 import { CreateSchoolDto } from './dto/create-school.dto';
@@ -15,6 +16,16 @@ export class SchoolsController {
   @Post()
   create(@Body() createSchoolDto: CreateSchoolDto) {
     return this.schoolsService.create(createSchoolDto);
+  }
+
+  @Roles(Role.ADMIN, Role.SUPERADMIN)
+  @Post('logo')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadLogo(
+    @CurrentSchoolId() schoolId: string,
+    @UploadedFile() file: Express.Multer.File
+  ) {
+    return this.schoolsService.uploadLogo(schoolId, file);
   }
 
   @Roles(Role.SUPERADMIN)

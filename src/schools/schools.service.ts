@@ -1,12 +1,16 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, BadRequestException } from '@nestjs/common';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { UploadService } from '../upload/upload.service';
 
 @Injectable()
 export class SchoolsService {
 
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    private uploadService: UploadService
+  ) { }
 
   async create(createSchoolDto: CreateSchoolDto) {
     const exists = await this.prisma.school.findUnique({
@@ -45,6 +49,19 @@ export class SchoolsService {
     return this.prisma.school.update({
       where: { id },
       data: updateSchoolDto,
+    });
+  }
+
+  async uploadLogo(id: string, file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
+
+    const result = await this.uploadService.uploadImage(file, `sportivo/schools/${id}`);
+
+    return this.prisma.school.update({
+      where: { id },
+      data: { logoUrl: result.secure_url },
     });
   }
 
