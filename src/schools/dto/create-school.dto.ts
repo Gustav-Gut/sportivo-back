@@ -13,4 +13,24 @@ export class CreateSchoolDto {
     @IsString()
     @IsOptional()
     address?: string;
+
+    @IsString()
+    @IsOptional()
+    email?: string;
+
+    @IsString()
+    @IsOptional()
+    phone?: string;
+
+    @IsString()
+    @IsOptional()
+    website?: string;
+
+    @IsString()
+    @IsOptional()
+    logoUrl?: string;
+
+    @IsString()
+    @IsOptional()
+    description?: string;
 }
