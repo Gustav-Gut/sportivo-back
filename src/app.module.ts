@@ -15,6 +15,7 @@ import { LessonsModule } from './lessons/lessons.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { FacilitiesModule } from './facilities/facilities.module';
 import { SportsModule } from './sports/sports.module';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { SportsModule } from './sports/sports.module';
     AttendanceModule,
     FacilitiesModule,
     SportsModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [
