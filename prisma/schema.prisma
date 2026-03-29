@@ -13,25 +13,27 @@ datasource db {
 }
 
 model School {
-  id            String         @id @default(uuid())
-  name          String
-  slug          String         @unique
-  address       String?
-  email         String?
-  phone         String?
-  website       String?
-  logoUrl       String?
-  description   String?
-  active        Boolean        @default(true)
-  users         User[]
-  plans         Plan[]
-  subscriptions Subscription[]
-  payments      Payment[]
-  sports        SchoolSport[]
-  lessons       Lesson[]
-  facilities    Facility[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id              String         @id @default(uuid())
+  name            String
+  slug            String         @unique
+  address         String?
+  email           String?
+  phone           String?
+  website         String?
+  logoUrl         String?
+  description     String?
+  active          Boolean        @default(true)
+  users           User[]
+  plans           Plan[]
+  subscriptions   Subscription[]
+  payments        Payment[]
+  sports          SchoolSport[]
+  lessons         Lesson[]
+  facilities      Facility[]
+  moraAlertDays   Int            @default(5)
+  preDueAlertDays Int            @default(3)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 }
 
 model User {
@@ -110,21 +112,23 @@ model Subscription {
 }
 
 model Payment {
-  id             String          @id @default(uuid())
-  amount         Float
-  currency       String          @default("CLP")
-  externalId     String?
-  payerId        String
-  schoolId       String
-  provider       PaymentProvider
-  status         PaymentStatus   @default(PENDING)
-  dueDate        DateTime?
-  paidAt         DateTime?
-  subscriptionId String
-  subscription   Subscription    @relation(fields: [subscriptionId], references: [id])
-  createdAt      DateTime        @default(now())
-  school         School          @relation(fields: [schoolId], references: [id])
-  payer          User            @relation(fields: [payerId], references: [id])
+  id              String          @id @default(uuid())
+  amount          Float
+  currency        String          @default("CLP")
+  externalId      String?
+  payerId         String
+  schoolId        String
+  provider        PaymentProvider
+  status          PaymentStatus   @default(PENDING)
+  dueDate         DateTime?
+  paidAt          DateTime?
+  lastAlertSentAt DateTime?
+  subscriptionId  String
+  subscription    Subscription    @relation(fields: [subscriptionId], references: [id])
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  school          School          @relation(fields: [schoolId], references: [id])
+  payer           User            @relation(fields: [payerId], references: [id])
 }
 
 model StudentProfile {

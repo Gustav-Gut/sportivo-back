@@ -2,12 +2,14 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { PaymentGateway } from './interfaces/payment-gateway.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { User } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class PaymentsService {
     constructor(
         @Inject('PAYMENT_GATEWAY') private readonly paymentGateway: PaymentGateway,
         private prismaService: PrismaService,
+        private notificationsService: NotificationsService,
     ) { }
 
     private async validateUser(email: string, schoolId: string): Promise<User> {
@@ -27,7 +29,7 @@ export class PaymentsService {
     /**
      * Genera un pago puntual (no suscripción) con su link de pago.
      */
-    async createPayment(amount: number, email: string, description: string, schoolId: string, subscriptionId: string, dueDate?: Date) {
+    async createPayment(amount: number, email: string, description: string, schoolId: string, subscriptionId: string, dueDate: Date) {
         const user = await this.validateUser(email, schoolId);
 
         const newPayment = await this.prismaService.payment.create({
@@ -35,7 +37,7 @@ export class PaymentsService {
                 amount: amount,
                 provider: this.paymentGateway.provider as any,
                 status: 'PENDING',
-                dueDate: dueDate || null,
+                dueDate: dueDate,
                 payer: { connect: { id: user.id } },
                 school: { connect: { id: schoolId } },
                 subscription: { connect: { id: subscriptionId } }
@@ -96,9 +98,17 @@ export class PaymentsService {
                     startDate: startDate,
                 }
             });
+        }
 
-            // Pre-generar los N pagos del plan (uno por mes)
-            const payments = Array.from({ length: plan.durationMonths }, (_, i) => {
+        // --- ASEGURAR PAGOS PRE-GENERADOS ---
+        // Verificamos cuántos pagos ya existen
+        const existingPaymentsCount = await this.prismaService.payment.count({
+            where: { subscriptionId: subscription.id }
+        });
+
+        // Si faltan pagos (ej: es nueva o el plan tiene 12 meses y no hay registros), los creamos
+        if (existingPaymentsCount === 0) {
+            const payments = Array.from({ length: plan.durationMonths || 1 }, (_, i) => {
                 const dueDate = new Date(startDate);
                 dueDate.setMonth(dueDate.getMonth() + i);
 
@@ -107,7 +117,7 @@ export class PaymentsService {
                     currency: 'CLP',
                     provider: this.paymentGateway.provider as any,
                     status: 'PENDING' as any,
-                    dueDate,
+                    dueDate: dueDate,
                     paidAt: null,
                     subscriptionId: subscription!.id,
                     payerId: payer.id,
@@ -140,6 +150,35 @@ export class PaymentsService {
                 plan: true
             }
         });
+    }
+
+
+
+    async resendPaymentLink(paymentId: string) {
+        const payment = await this.prismaService.payment.findUnique({
+            where: { id: paymentId },
+            include: {
+                payer: true,
+                school: true,
+                subscription: { include: { student: true } }
+            }
+        });
+
+        if (!payment) {
+            throw new NotFoundException('Payment not found');
+        }
+
+        // Si el pago no tiene link (externalId de MP o similar), deberíamos generarlo.
+        // Pero para simplificar, asumimos que usamos el payment.id para el link de respuesta.
+        const paymentLink = `https://${payment.school.slug}.sportivo.com/pay/${payment.id}`;
+
+        await this.notificationsService.sendManualLink(
+            payment.payer.email,
+            `${payment.subscription.student.firstName} ${payment.subscription.student.lastName}`,
+            paymentLink
+        );
+
+        return { success: true, message: 'Link reenviado exitosamente' };
     }
 
     async cancelSubscription(subscriptionId: string, schoolId: string) {

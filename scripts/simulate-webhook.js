@@ -1,4 +1,8 @@
 const axios = require('axios');
+require('dotenv').config();
+const { PrismaClient } = require('@prisma/client');
+const { PrismaPg } = require('@prisma/adapter-pg');
+const { Pool } = require('pg');
 
 const baseUrl = 'http://localhost:3000';
 
@@ -41,7 +45,8 @@ async function runTest() {
             amount: 15000,
             description: 'Mensualidad Abril',
             email: 'test@mercadopago.com',
-            subscriptionId: subscriptionId
+            subscriptionId: subscriptionId,
+            dueDate: new Date().toISOString()
         }, {
             headers: { 'Cookie': cookie }
         });
@@ -57,6 +62,27 @@ async function runTest() {
         });
 
         console.log('Webhook procesado exitosamente.');
+
+        console.log('\n--- PASO 5: VERIFICAR PAGOS EN DB ---');
+        const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+        const adapter = new PrismaPg(pool);
+        const prisma = new PrismaClient({ adapter });
+        const payments = await prisma.payment.findMany({
+            where: { subscriptionId: subscriptionId },
+            orderBy: { dueDate: 'asc' }
+        });
+
+        console.log(`PAGOS ENCONTRADOS: ${payments.length}`);
+        payments.forEach((p, i) => {
+            console.log(`Pago ${i + 1}: Vencimiento ${p.dueDate.toISOString()}, Estado: ${p.status}`);
+        });
+
+        if (payments.length > 1) {
+            console.log('\n✅ ÉXITO: Se pre-generó el calendario de pagos correctamente.');
+        } else {
+            console.log('\n❌ ERROR: No se generó el calendario de pagos esperado.');
+        }
+        await prisma.$disconnect();
 
         console.log('\n--- PASO 5: VERIFICACIÓN FINAL ---');
         const finalSubsRes = await axios.get(`${baseUrl}/payments/subscriptions?email=test@mercadopago.com`, {

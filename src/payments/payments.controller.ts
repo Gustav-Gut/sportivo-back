@@ -5,13 +5,21 @@ import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { MercadoPagoService } from './mercadopago.service';
+import { TasksService } from '../tasks/tasks.service';
 
 @Controller('payments')
 export class PaymentsController {
     constructor(
         private readonly paymentsService: PaymentsService,
         @Inject('PAYMENT_GATEWAY') private readonly mercadoPagoService: MercadoPagoService,
+        private readonly tasksService: TasksService,
     ) { }
+
+    @Public()
+    @Post('trigger-alerts')
+    async triggerAlerts() {
+        return await this.tasksService.handleCron();
+    }
 
     @Post('create-link')
     createLink(
@@ -23,7 +31,8 @@ export class PaymentsController {
             createPaymentDto.email,
             createPaymentDto.description,
             schoolId,
-            createPaymentDto.subscriptionId
+            createPaymentDto.subscriptionId,
+            new Date(createPaymentDto.dueDate)
         );
     }
 
@@ -61,6 +70,13 @@ export class PaymentsController {
         @CurrentSchoolId() schoolId: string
     ) {
         return this.paymentsService.cancelSubscription(id, schoolId);
+    }
+
+    @Post('resend-link/:id')
+    resendLink(
+        @Param('id') id: string,
+    ) {
+        return this.paymentsService.resendPaymentLink(id);
     }
 
     @Public()

@@ -17,4 +17,8 @@ export class CreatePaymentDto {
     @IsString()
     @IsNotEmpty()
     subscriptionId: string;
+
+    @IsString()
+    @IsNotEmpty()
+    dueDate: string;
 }
