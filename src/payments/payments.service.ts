@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PaymentGateway } from './interfaces/payment-gateway.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { User } from '@prisma/client';
@@ -6,6 +6,8 @@ import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class PaymentsService {
+    private readonly logger = new Logger(PaymentsService.name);
+
     constructor(
         @Inject('PAYMENT_GATEWAY') private readonly paymentGateway: PaymentGateway,
         private prismaService: PrismaService,
@@ -170,9 +172,10 @@ export class PaymentsService {
 
         // Si el pago no tiene link (externalId de MP o similar), deberíamos generarlo.
         // Pero para simplificar, asumimos que usamos el payment.id para el link de respuesta.
-        const paymentLink = `https://${payment.school.slug}.sportivo.com/pay/${payment.id}`;
+        const paymentLink = `https://${payment.school.slug}.clubit.cl/pay/${payment.id}`;
 
         await this.notificationsService.sendManualLink(
+            payment.schoolId,
             payment.payer.email,
             `${payment.subscription.student.firstName} ${payment.subscription.student.lastName}`,
             paymentLink
@@ -234,7 +237,7 @@ export class PaymentsService {
         const type = body.type || body.topic;
         const dataId = body.data?.id || body.data?.ID;
         if (!dataId) return;
-        console.log(`Webhook received: Type=${type}, ID=${dataId}`);
+        this.logger.log(`Webhook received: Type=${type}, ID=${dataId}`);
 
         try {
             if (type === 'payment') {
@@ -258,7 +261,7 @@ export class PaymentsService {
                 }
             }
         } catch (error) {
-            console.error('Error processing webhook:', error);
+            this.logger.error('Error processing webhook:', error);
         }
     }
 
@@ -272,15 +275,8 @@ export class PaymentsService {
         const now = new Date();
         const mappedStatus = this.mapMercadoPagoStatus(rawStatus);
 
-        console.log(
-            'Processing Payment Update:',
-            rawStatus,
-            '→',
-            mappedStatus,
-            'externalRef:',
-            externalId,
-            'mpId:',
-            mpPaymentId
+        this.logger.log(
+            `Processing Payment Update: ${rawStatus} → ${mappedStatus} (externalRef: ${externalId}, mpId: ${mpPaymentId})`
         );
 
         const isApproved = mappedStatus === 'COMPLETED';
@@ -352,7 +348,7 @@ export class PaymentsService {
      * Procesa la actualización de estado de una suscripción (alta/baja).
      */
     async processSubscriptionStatusUpdate(externalId: string, mpStatus: string, mpSubscriptionId: string) {
-        console.log('Processing Subscription Update:', mpStatus, 'externalRef:', externalId);
+        this.logger.log(`Processing Subscription Update: ${mpStatus} (externalRef: ${externalId})`);
 
         return await this.prismaService.subscription.update({
             where: { id: externalId },

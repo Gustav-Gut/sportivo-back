@@ -4,7 +4,7 @@ const { PrismaClient } = require('@prisma/client');
 const { PrismaPg } = require('@prisma/adapter-pg');
 const { Pool } = require('pg');
 
-const baseUrl = 'http://localhost:3000';
+const baseUrl = 'http://localhost:3000/api';
 
 async function runTest() {
     try {

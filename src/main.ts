@@ -14,6 +14,7 @@ async function bootstrap() {
     const configService = app.get(ConfigService);
 
     app.use(cookieParser());
+    app.setGlobalPrefix('api');
 
     app.useGlobalPipes(new ValidationPipe({
       whitelist: true,
@@ -28,8 +29,8 @@ async function bootstrap() {
 
     // Configuración de Swagger
     const config = new DocumentBuilder()
-      .setTitle('Sportivo API')
-      .setDescription('Documentación de la API de Sportivo - Gestión Deportiva Enterprise')
+      .setTitle('Clubit API')
+      .setDescription('Documentación de la API de Clubit - Gestión Deportiva Enterprise')
       .setVersion('1.0')
       .addBearerAuth() // Soporte para JWT
       .build();

@@ -34,6 +34,8 @@ model School {
   preDueAlertDays Int            @default(3)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+
+  notificationTemplates NotificationTemplate[]
 }
 
 model User {
@@ -299,4 +301,31 @@ enum DayOfWeek {
   FRIDAY
   SATURDAY
   SUNDAY
+}
+
+enum NotificationChannel {
+  EMAIL
+  WHATSAPP
+  SMS
+}
+
+enum NotificationType {
+  PRE_DUE
+  MORA
+  MANUAL_LINK
+}
+
+model NotificationTemplate {
+  id        String              @id @default(uuid())
+  schoolId  String
+  type      NotificationType
+  channel   NotificationChannel
+  subject   String?
+  body      String              @db.Text
+  active    Boolean             @default(true)
+  school    School              @relation(fields: [schoolId], references: [id])
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@unique([schoolId, type, channel])
 }

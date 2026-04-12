@@ -57,7 +57,7 @@ export class SchoolsService {
       throw new BadRequestException('File is required');
     }
 
-    const result = await this.uploadService.uploadImage(file, `sportivo/schools/${id}`);
+    const result = await this.uploadService.uploadImage(file, `clubit/schools/${id}`);
 
     return this.prisma.school.update({
       where: { id },

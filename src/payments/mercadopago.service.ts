@@ -1,8 +1,9 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import MercadoPagoConfig, { Preference, Payment, PreApproval } from 'mercadopago';
 import { PaymentGateway, PaymentDetails } from './interfaces/payment-gateway.interface';
 import { PaymentProvider } from '@prisma/client';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class MercadoPagoService implements PaymentGateway {
@@ -10,11 +11,13 @@ export class MercadoPagoService implements PaymentGateway {
 
     readonly provider = PaymentProvider.MERCADOPAGO;
 
+    private readonly logger = new Logger(MercadoPagoService.name);
+
     constructor(private configService: ConfigService) {
         const accessToken = this.configService.get<string>('MERCADOPAGO_ACCESS_TOKEN');
 
         if (!accessToken) {
-            console.warn('MERCADOPAGO_ACCESS_TOKEN not set in .env');
+            this.logger.warn('MERCADOPAGO_ACCESS_TOKEN not set in .env');
         }
 
         this.client = new MercadoPagoConfig({
@@ -37,7 +40,7 @@ export class MercadoPagoService implements PaymentGateway {
                     external_reference: externalId,
                     items: [
                         {
-                            id: 'sportivo-service',
+                            id: 'clubit-service',
                             title: description,
                             quantity: 1,
                             unit_price: amount,
@@ -58,8 +61,8 @@ export class MercadoPagoService implements PaymentGateway {
             }
             return response.sandbox_init_point; // init_point es el link de pago
         } catch (error: any) {
-            console.warn('MercadoPago API Error (Preference):', error.response?.data || error.message);
-            console.log('--- USANDO LINK DE PRUEBA (MOCK) PARA NO BLOQUEAR EL TEST ---');
+            this.logger.warn(`MercadoPago API Error (Preference): ${error.response?.data?.message || error.message}`);
+            this.logger.log('--- USANDO LINK DE PRUEBA (MOCK) PARA NO BLOQUEAR EL TEST ---');
             return `https://www.mercadopago.cl/sandbox/mock-link/${externalId}`;
         }
     }
@@ -93,8 +96,8 @@ export class MercadoPagoService implements PaymentGateway {
             }
             return response.init_point; // init_point es el link de pago
         } catch (error: any) {
-            console.warn('MercadoPago API Error (Subscription):', error.response?.data || error.message);
-            console.log('--- USANDO LINK DE PRUEBA (MOCK) PARA NO BLOQUEAR EL TEST ---');
+            this.logger.warn(`MercadoPago API Error (Subscription): ${error.response?.data?.message || error.message}`);
+            this.logger.log('--- USANDO LINK DE PRUEBA (MOCK) PARA NO BLOQUEAR EL TEST ---');
             return `https://www.mercadopago.cl/sandbox/mock-link/${externalId}`;
         }
     }
@@ -111,7 +114,7 @@ export class MercadoPagoService implements PaymentGateway {
             const response = await preApproval.search({ options: filters });
             return response.results || [];
         } catch (error) {
-            console.error('Error buscando suscripciones:', error);
+            this.logger.error('Error buscando suscripciones:', error);
             throw new InternalServerErrorException('Error searching subscriptions');
         }
     }
@@ -154,9 +157,9 @@ export class MercadoPagoService implements PaymentGateway {
                     status: 'cancelled',
                 },
             });
-            console.log(`MercadoPago Subscription ${id} cancelled successfully.`);
+            this.logger.log(`MercadoPago Subscription ${id} cancelled successfully.`);
         } catch (error: any) {
-            console.error('Error cancelando suscripción MP:', error.response?.data || error.message || error);
+            this.logger.error(`Error cancelando suscripción MP: ${error.response?.data?.message || error.message}`);
             // Si el error es que ya está cancelada, no lanzamos excepción
             if (error.response?.data?.message?.includes('status is already cancelled')) {
                 return;
@@ -173,12 +176,11 @@ export class MercadoPagoService implements PaymentGateway {
         const secret = this.configService.get<string>('MERCADOPAGO_WEBHOOK_SECRET');
         if (!secret) {
             // Sin secret configurado, se omite validación (útil en desarrollo local)
-            console.warn('MERCADOPAGO_WEBHOOK_SECRET not set — skipping signature validation');
+            this.logger.warn('MERCADOPAGO_WEBHOOK_SECRET not set — skipping signature validation');
             return true;
         }
 
         try {
-            const crypto = require('crypto');
             // MP firma así: ts=<timestamp>;v1=<signature>
             const parts = xSignature.split(',');
             const tsPart = parts.find(p => p.startsWith('ts='));

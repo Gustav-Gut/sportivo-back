@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
@@ -6,6 +6,8 @@ import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class TasksService {
+    private readonly logger = new Logger(TasksService.name);
+
     constructor(
         private prismaService: PrismaService,
         private notificationsService: NotificationsService
@@ -14,10 +16,12 @@ export class TasksService {
     // Corre todos los días a las 8 AM
     @Cron(CronExpression.EVERY_DAY_AT_8AM)
     async handleCron() {
-        console.log('--- INICIO DE TAREAS AUTOMÁTICAS: ALERTAS DE PAGO ---');
-        await this.checkUpcomingPayments();
-        await this.checkOverduePayments();
-        console.log('--- FIN DE TAREAS AUTOMÁTICAS ---');
+        this.logger.log('--- INICIO DE TAREAS AUTOMÁTICAS: ALERTAS DE PAGO ---');
+        await Promise.all([
+            this.checkUpcomingPayments(),
+            this.checkOverduePayments()
+        ]);
+        this.logger.log('--- FIN DE TAREAS AUTOMÁTICAS ---');
     }
 
     private async checkUpcomingPayments() {
@@ -25,7 +29,7 @@ export class TasksService {
             where: { active: true }
         });
 
-        for (const school of schools) {
+        await Promise.all(schools.map(async (school) => {
             const targetDate = new Date();
             targetDate.setDate(targetDate.getDate() + school.preDueAlertDays);
             targetDate.setHours(0, 0, 0, 0);
@@ -48,11 +52,13 @@ export class TasksService {
 
             for (const payment of upcomingPayments) {
                 await this.notificationsService.sendPreDueAlert(
+                    payment.schoolId,
                     payment.payer.email,
                     `${payment.subscription.student.firstName} ${payment.subscription.student.lastName}`,
                     payment.amount,
                     payment.dueDate!,
-                    `https://${school.slug}.sportivo.com/pay/${payment.id}` // Link ejemplo
+                    `https://${school.slug}.clubit.cl/pay/${payment.id}`, // Branding actualizado
+                    school.name // Contexto optimizado
                 );
 
                 await this.prismaService.payment.update({
@@ -60,7 +66,7 @@ export class TasksService {
                     data: { lastAlertSentAt: new Date() }
                 });
             }
-        }
+        }));
     }
 
     private async checkOverduePayments() {
@@ -68,7 +74,7 @@ export class TasksService {
             where: { active: true }
         });
 
-        for (const school of schools) {
+        await Promise.all(schools.map(async (school) => {
             const targetDate = new Date();
             targetDate.setDate(targetDate.getDate() - school.moraAlertDays);
             targetDate.setHours(0, 0, 0, 0);
@@ -105,10 +111,12 @@ export class TasksService {
 
                 for (const admin of admins) {
                     await this.notificationsService.sendMoraAlert(
+                        payment.schoolId,
                         admin.email,
                         studentName,
                         payment.amount,
-                        daysOverdue
+                        daysOverdue,
+                        school.name // Contexto optimizado
                     );
                 }
 
@@ -117,6 +125,6 @@ export class TasksService {
                     data: { lastAlertSentAt: new Date() }
                 });
             }
-        }
+        }));
     }
 }
