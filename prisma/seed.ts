@@ -22,7 +22,8 @@ async function main() {
     });
 
     // 2. Crear Superadmin
-    const hashedPassword = await bcrypt.hash('2768696Clubit!', 12);
+    const saltRounds = Number(process.env.SALT_ROUNDS) || 12;
+    const hashedPassword = await bcrypt.hash('2768696Clubit!', saltRounds);
 
     const superadmin = await prisma.user.upsert({
         where: { email_schoolId: { email: 'gustav@clubit.cl', schoolId: school.id } },
