@@ -14,7 +14,7 @@ async function bootstrap() {
     const configService = app.get(ConfigService);
 
     app.use(cookieParser());
-    app.setGlobalPrefix('api');
+    app.setGlobalPrefix('');
 
     app.useGlobalPipes(new ValidationPipe({
       whitelist: true,
@@ -36,7 +36,7 @@ async function bootstrap() {
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('api/docs', app, document);
+    SwaggerModule.setup('docs', app, document);
 
     const frontendUrls = configService.get<string>('FRONTEND_URLS');
     const allowedOrigins = frontendUrls
@@ -53,7 +53,7 @@ async function bootstrap() {
     await app.listen(port, '0.0.0.0');
 
     console.log(`Application is running on port: ${port}`);
-    console.log(`Swagger documentation available at: http://localhost:${port}/api/docs`);
+    console.log(`Swagger documentation available at: http://localhost:${port}/docs`);
   } catch (error) {
     console.error('Error starting the application:', error);
     process.exit(1);
