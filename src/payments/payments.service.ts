@@ -83,6 +83,8 @@ export class PaymentsService {
         });
 
         const startDate = new Date();
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + (plan.durationMonths || 1));
 
         if (subscription) {
             // Ya existe: solo actualizamos el pagador si cambió
@@ -101,6 +103,7 @@ export class PaymentsService {
                     status: 'PENDING',
                     schoolId: schoolId,
                     startDate: startDate,
+                    endDate: endDate,
                 }
             });
         }
