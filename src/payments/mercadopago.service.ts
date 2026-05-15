@@ -48,22 +48,21 @@ export class MercadoPagoService implements PaymentGateway {
                         },
                     ],
                     back_urls: {
-                        success: 'https://www.google.com/success',
-                        failure: 'https://www.google.com/failure',
-                        pending: 'https://www.google.com/pending',
+                        success: this.configService.get<string>('MERCADOPAGO_BACK_URL_SUCCESS', 'http://localhost:4200/payment/success'),
+                        failure: this.configService.get<string>('MERCADOPAGO_BACK_URL_FAILURE', 'http://localhost:4200/payment/failure'),
+                        pending: this.configService.get<string>('MERCADOPAGO_BACK_URL_PENDING', 'http://localhost:4200/payment/pending'),
                     }
                     // auto_return: 'approved',
                 },
             });
 
-            if (!response.sandbox_init_point) {
+            if (!response.init_point) {
                 throw new InternalServerErrorException('No init_point returned');
             }
-            return response.sandbox_init_point; // init_point es el link de pago
+            return response.init_point; // init_point es el link de pago
         } catch (error: any) {
-            this.logger.warn(`MercadoPago API Error (Preference): ${error.response?.data?.message || error.message}`);
-            this.logger.log('--- USANDO LINK DE PRUEBA (MOCK) PARA NO BLOQUEAR EL TEST ---');
-            return `https://www.mercadopago.cl/sandbox/mock-link/${externalId}`;
+            this.logger.error(`MercadoPago API Error (Preference): ${error.response?.data?.message || error.message}`);
+            throw new InternalServerErrorException('No se pudo generar el link de pago en MercadoPago');
         }
     }
 
@@ -96,9 +95,8 @@ export class MercadoPagoService implements PaymentGateway {
             }
             return response.init_point; // init_point es el link de pago
         } catch (error: any) {
-            this.logger.warn(`MercadoPago API Error (Subscription): ${error.response?.data?.message || error.message}`);
-            this.logger.log('--- USANDO LINK DE PRUEBA (MOCK) PARA NO BLOQUEAR EL TEST ---');
-            return `https://www.mercadopago.cl/sandbox/mock-link/${externalId}`;
+            this.logger.error(`MercadoPago API Error (Subscription): ${error.response?.data?.message || error.message}`);
+            throw new InternalServerErrorException('No se pudo generar la suscripción en MercadoPago');
         }
     }
 
