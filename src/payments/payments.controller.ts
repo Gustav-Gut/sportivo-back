@@ -4,6 +4,9 @@ import { Public } from '../auth/decorators/public.decorator';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
+import { AdminEnrollmentDto } from './dto/admin-enrollment.dto';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 import { MercadoPagoService } from './mercadopago.service';
 import { TasksService } from '../tasks/tasks.service';
 
@@ -47,6 +50,15 @@ export class PaymentsController {
             schoolId,
             createSubscriptionDto.studentId,
         );
+    }
+
+    @Roles(Role.ADMIN, Role.SUPERADMIN)
+    @Post('enroll')
+    enrollAdmin(
+        @Body() dto: AdminEnrollmentDto,
+        @CurrentSchoolId() schoolId: string
+    ) {
+        return this.paymentsService.adminEnrollStudent(schoolId, dto);
     }
 
     @Get('subscriptions')

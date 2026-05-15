@@ -3,7 +3,9 @@ import type { PaymentGateway } from './interfaces/payment-gateway.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { User } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
-
+import { UsersService } from '../users/users.service';
+import { AdminEnrollmentDto } from './dto/admin-enrollment.dto';
+import { Role } from '@prisma/client';
 @Injectable()
 export class PaymentsService {
     private readonly logger = new Logger(PaymentsService.name);
@@ -12,6 +14,7 @@ export class PaymentsService {
         @Inject('PAYMENT_GATEWAY') private readonly paymentGateway: PaymentGateway,
         private prismaService: PrismaService,
         private notificationsService: NotificationsService,
+        private usersService: UsersService,
     ) { }
 
     private async validateUser(email: string, schoolId: string): Promise<User> {
@@ -140,6 +143,76 @@ export class PaymentsService {
         );
 
         return { link, subscriptionId: subscription.id };
+    }
+
+    async adminEnrollStudent(schoolId: string, dto: AdminEnrollmentDto) {
+        // Default password for new users
+        const defaultPassword = dto.studentRut;
+
+        let studentId: string;
+        let payerEmail: string;
+
+        if (dto.isAdult) {
+            // Create adult student
+            const user = await this.usersService.create({
+                rut: dto.studentRut,
+                firstName: dto.studentFirstName,
+                lastName: dto.studentLastName,
+                email: dto.studentEmail,
+                phone: dto.studentPhone,
+                password: defaultPassword,
+                roles: [Role.STUDENT],
+                studentProfile: {} // Create empty profile
+            }, schoolId);
+
+            studentId = user.id;
+            payerEmail = user.email;
+        } else {
+            // Minor: Create Tutor first
+            let tutor = await this.prismaService.user.findFirst({
+                where: { email: dto.tutorEmail!, schoolId: schoolId }
+            });
+
+            if (!tutor) {
+                tutor = await this.usersService.create({
+                    rut: dto.tutorRut!,
+                    firstName: dto.tutorFirstName!,
+                    lastName: dto.tutorLastName!,
+                    email: dto.tutorEmail!,
+                    phone: dto.tutorPhone,
+                    password: dto.tutorRut!,
+                    roles: [Role.TUTOR],
+                    tutorProfile: {}
+                }, schoolId);
+            }
+
+            // Create Student and link to Tutor
+            const student = await this.usersService.create({
+                rut: dto.studentRut,
+                firstName: dto.studentFirstName,
+                lastName: dto.studentLastName,
+                email: dto.studentEmail,
+                phone: dto.studentPhone,
+                password: dto.studentRut,
+                roles: [Role.STUDENT],
+                studentProfile: {},
+                tutors: [{
+                    tutorId: tutor.id,
+                    relationType: dto.relationType || 'Parent'
+                }]
+            }, schoolId);
+
+            studentId = student.id;
+            payerEmail = tutor.email;
+        }
+
+        // Create Subscription and generate MP link
+        return this.createSubscription(
+            dto.planId,
+            payerEmail,
+            schoolId,
+            studentId
+        );
     }
 
     async getSubscriptions(email: string, schoolId: string) {

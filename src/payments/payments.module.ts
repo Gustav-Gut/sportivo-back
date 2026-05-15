@@ -4,9 +4,10 @@ import { PaymentsController } from './payments.controller';
 import { MercadoPagoService } from './mercadopago.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { TasksModule } from '../tasks/tasks.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
-  imports: [NotificationsModule, TasksModule],
+  imports: [NotificationsModule, TasksModule, UsersModule],
   providers: [
     PaymentsService,
     MercadoPagoService,
@@ -15,6 +16,7 @@ import { TasksModule } from '../tasks/tasks.module';
       useClass: MercadoPagoService,
     },
   ],
-  controllers: [PaymentsController]
+  controllers: [PaymentsController],
+  exports: [PaymentsService]
 })
 export class PaymentsModule { }
