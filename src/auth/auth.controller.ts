@@ -14,7 +14,7 @@ export class AuthController {
     @Body() body: any,
     @Res({ passthrough: true }) res: Response
   ) {
-    const { access_token } = await this.authService.login(body);
+    const { access_token, user } = await this.authService.login(body);
 
     res.cookie('access_token', access_token, {
       httpOnly: true,
@@ -23,7 +23,7 @@ export class AuthController {
       path: '/',
     });
 
-    return { success: true };
+    return { success: true, user };
   }
 
   @Post('logout')
