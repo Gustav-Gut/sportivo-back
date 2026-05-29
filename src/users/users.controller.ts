@@ -2,9 +2,9 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, Una
 import { CurrentSchoolId } from '../auth/decorators/current-school-id.decorator';
 import { ClassSerializerInterceptor } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { PaginationDto } from '../common/dto/pagination.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UsersQueryDto } from './dto/users-query.dto';
 import { User } from './entities/user.entity';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
@@ -28,10 +28,9 @@ export class UsersController {
   @Get()
   async findAll(
     @CurrentSchoolId() schoolId: string,
-    @Query() paginationDto: PaginationDto,
-    @Query('roles') roles?: string
+    @Query() query: UsersQueryDto,
   ) {
-    const result = await this.usersService.findAll(schoolId, paginationDto, paginationDto.search, roles);
+    const result = await this.usersService.findAll(schoolId, query, query.search, query.roles);
     return {
       ...result,
       data: result.data.map((user: any) => new User(user))
